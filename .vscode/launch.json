@@ -2,10 +2,11 @@
     "configurations": [
         {
             "type": "java",
-            "name": "UnchainApplication",
+            "name": "UnchainApplication-demo",
             "request": "launch",
             "mainClass": "ch.redmoon.unchain.UnchainApplication",
-            "projectName": "unchain2-admin-api"
+            "projectName": "unchain-admin-api",
+            "args": "--spring.profiles.active=demo"
         },
         {
             "type": "java",

@@ -101,9 +101,7 @@ public class FeaturesController implements FeaturesApi {
                         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
                         log.error("Conflict detected while saving feature '{}': {}", featureName, e.getMessage());
-                        return ResponseEntity.status(HttpStatus.CONFLICT)
-                                .body((Feature) (Object) java.util.Map.of("message",
-                                        "Feature name '" + featureName + "' is already in use"));
+                        return ResponseEntity.status(HttpStatus.CONFLICT).<Feature>body(null);
                     }
                 })
                 .orElse(ResponseEntity.notFound().build());

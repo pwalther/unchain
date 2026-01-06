@@ -17,7 +17,7 @@
 package ch.redmoon.unchain.entity;
 
 import ch.redmoon.unchain.config.BeanUtil;
-import ch.redmoon.unchain.repository.AuditLogRepository;
+import ch.redmoon.unchain.service.AuditLogService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -58,7 +58,7 @@ public class AuditListener {
 
     private void logAudit(Object entity, String action) {
         try {
-            AuditLogRepository auditLogRepository = BeanUtil.getBean(AuditLogRepository.class);
+            AuditLogService auditLogService = BeanUtil.getBean(AuditLogService.class);
 
             String entityType = entity.getClass().getSimpleName();
             String entityId = getEntityId(entity);
@@ -90,7 +90,7 @@ public class AuditListener {
                     .changedAt(OffsetDateTime.now())
                     .build();
 
-            auditLogRepository.save(auditLog);
+            auditLogService.saveAuditLog(auditLog);
         } catch (Throwable e) {
             log.error("Failed to save audit log for {} {}: {}", entity.getClass().getSimpleName(), action,
                     e.getMessage(), e);

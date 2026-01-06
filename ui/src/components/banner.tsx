@@ -1,11 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Info } from "lucide-react"
+import { X, Info, WifiOff } from "lucide-react"
 import { BANNER_CONFIG } from "@/config/banner"
+import { useAuth } from "@/hooks/use-auth"
 
 export function Banner() {
     const [isVisible, setIsVisible] = useState(false)
+    const { status, failureCount, isFetching } = useAuth()
+    const isError = status === 'error' || (failureCount > 0 && isFetching)
 
     useEffect(() => {
         const lastDismissedMessage = localStorage.getItem("banner-message-dismissed")
@@ -20,6 +23,19 @@ export function Banner() {
     const handleDismiss = () => {
         setIsVisible(false)
         localStorage.setItem("banner-message-dismissed", BANNER_CONFIG.message)
+    }
+
+    if (isError) {
+        return (
+            <div className="relative w-full bg-destructive text-destructive-foreground py-2 px-4 shadow-lg border-b border-destructive/20 overflow-hidden z-[100] animate-in fade-in slide-in-from-top duration-300">
+                <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
+                    <WifiOff size={16} className="shrink-0 animate-pulse" />
+                    <p className="text-sm font-semibold tracking-wide">
+                        Connection Interrupted: Unable to reach the server.
+                    </p>
+                </div>
+            </div>
+        )
     }
 
     if (!isVisible) return null

@@ -31,8 +31,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <div className="flex flex-col h-screen">
-          <Banner />
           <Providers>
+            <Banner />
             <div className="flex-1 overflow-hidden">
               {children}
             </div>
