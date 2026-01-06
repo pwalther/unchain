@@ -1,0 +1,83 @@
+databaseChangeLog:
+      - changeSet:
+              id: 009-insert-default-strategies
+              author: pwalther
+              changes:
+                    - insert:
+                            tableName: strategy_definition
+                            columns:
+                                  - column:
+                                          name: name
+                                          value: flexibleRollout
+                                  - column:
+                                          name: description
+                                          value: Roll out to a percentage of your userbase, and ensure that the experience is the same for the user on each visit.
+                                  - column:
+                                          name: editable
+                                          valueBoolean: false
+                    - insert:
+                            tableName: strategy_parameter
+                            columns:
+                                  - column:
+                                          name: strategy_name
+                                          value: flexibleRollout
+                                  - column:
+                                          name: name
+                                          value: rollout
+                                  - column:
+                                          name: type
+                                          value: percentage
+                                  - column:
+                                          name: description
+                                          value: "Percentage of users to receive the feature toggle"
+                                  - column:
+                                          name: is_required
+                                          valueBoolean: false
+                    - insert:
+                            tableName: strategy_parameter
+                            columns:
+                                  - column:
+                                          name: strategy_name
+                                          value: flexibleRollout
+                                  - column:
+                                          name: name
+                                          value: stickiness
+                                  - column:
+                                          name: type
+                                          value: string
+                                  - column:
+                                          name: description
+                                          value: "Used define stickiness. Possible values: default, userId, sessionId, random"
+                                  - column:
+                                          name: is_required
+                                          valueBoolean: true
+                    - insert:
+                            tableName: strategy_parameter
+                            columns:
+                                  - column:
+                                          name: strategy_name
+                                          value: flexibleRollout
+                                  - column:
+                                          name: name
+                                          value: groupId
+                                  - column:
+                                          name: type
+                                          value: string
+                                  - column:
+                                          name: description
+                                          value: "Used to define a activation groups, which allows you to correlate across feature toggles."
+                                  - column:
+                                          name: is_required
+                                          valueBoolean: true
+                    - insert:
+                            tableName: strategy_definition
+                            columns:
+                                  - column:
+                                          name: name
+                                          value: default
+                                  - column:
+                                          name: description
+                                          value: 'This strategy turns on / off for your entire userbase. However, it is better to use a "Gradual rollout" strategy (use 100% for on, 0% for off).'
+                                  - column:
+                                          name: editable
+                                          valueBoolean: false

@@ -1,0 +1,1909 @@
+openapi: 3.0.3
+info:
+  title: Unchain Admin API
+  description: |
+    Comprehensive OpenAPI specification for the Unchain Admin API.
+
+    This API controls the configuration of the Unchain Feature Management platform, 
+    including Features, Strategies, Projects, Environments, Context Fields, 
+    Change Requests, Segments, FeatureTags, and Dependencies.
+
+    **Base URL**: `<your-unchain-instance>/api/admin`
+  version: 4.0.0
+  contact:
+    name: Philipp Walther
+servers:
+  - url: http://localhost:8080
+    description: Local Instance
+security:
+  - OidcAuth: []
+
+tags:
+  - name: Projects
+  - name: Features
+  - name: Strategies
+  - name: Context
+  - name: Segments
+  - name: Change Requests
+  - name: FeatureTag
+  - name: Dependencies
+
+paths:
+  # =========================================================================
+  # PROJECTS & FEATURES
+  # =========================================================================
+  /projects:
+    get:
+      operationId: listProjects
+      x-required-permissions: [PROJECT_READ]
+      summary: List all projects
+      tags: [Projects]
+      parameters:
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+    post:
+      summary: Create a new project
+      operationId: createProject
+      x-required-permissions: [PROJECT_CREATE]
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "201":
+          description: Project created
+          headers:
+            location:
+              description: The location of the newly created resource.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      x-required-permissions: [PROJECT_READ]
+      summary: Get project details
+      tags: [Projects]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: Project details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    put:
+      operationId: updateProject
+      x-required-permissions: [PROJECT_UPDATE]
+      summary: Update project
+      tags: [Projects]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectRequest"
+      responses:
+        "200":
+          description: Project updated
+    delete:
+      operationId: deleteProject
+      x-required-permissions: [PROJECT_DELETE]
+      summary: Delete project
+      tags: [Projects]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: Project deleted
+
+  /projects/{projectId}/features:
+    get:
+      operationId: getFeaturesByProject
+      x-required-permissions: [PROJECT_READ]
+      summary: Get all features for a project
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: List of features
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  features:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Feature"
+    post:
+      operationId: createFeature
+      x-required-permissions: [FEATURE_CREATE]
+      summary: Create a new feature toggle
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeatureRequest"
+      responses:
+        "201":
+          description: Feature created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feature"
+
+  /projects/{projectId}/features/{featureName}:
+    get:
+      operationId: getFeature
+      x-required-permissions: [FEATURE_READ]
+      summary: Get a specific feature
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+      responses:
+        "200":
+          description: Feature details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Feature"
+    put:
+      operationId: updateFeature
+      summary: Update a feature toggle
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFeatureRequest"
+      responses:
+        "200":
+          description: Feature updated
+    delete:
+      operationId: deleteFeature
+      x-required-permissions: [FEATURE_DELETE]
+      summary: Archive a feature toggle
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+      responses:
+        "200":
+          description: Feature archived successfully
+
+  # =========================================================================
+  # FEATURE STRATEGIES & ENVIRONMENTS
+  # =========================================================================
+
+  /environments:
+    post:
+      operationId: createEnvironment
+      summary: Creates a new environment
+      description: |-
+        Uses the details provided in the payload to create a new environment
+      requestBody:
+        description: createEnvironmentSchema
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/createEnvironmentSchema"
+      responses:
+        "201":
+          description: The resource was successfully created.
+          headers:
+            location:
+              description: The location of the newly created resource.
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentSchema"
+        "400":
+          description: The request data does not match what we expect.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: ValidationError
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      The request payload you provided doesn't conform to the schema. The
+                      .parameters property should be object. You sent [].
+        "401":
+          description:
+            Authorization information is missing or invalid. Provide a valid
+            API token as the `authorization` header, e.g.
+            `authorization:*.*.my-admin-token`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: AuthenticationRequired
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You must log in to use . Your request had no authorization
+                      header, so we could not authorize you. Try logging in at
+                      /auth/simple/login.
+      tags:
+        - Environments
+    get:
+      operationId: getAllEnvironments
+      x-required-permissions: [ENVIRONMENT_READ]
+      summary: Get all environments
+      description: Retrieves all environments that exist in this  instance.
+      responses:
+        "200":
+          description: environmentsSchema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentsSchema"
+        "401":
+          description:
+            Authorization information is missing or invalid. Provide a valid
+            API token as the `authorization` header, e.g.
+            `authorization:*.*.my-admin-token`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: AuthenticationRequired
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You must log in to use . Your request had no authorization
+                      header, so we could not authorize you. Try logging in at
+                      /auth/simple/login.
+        "403":
+          description:
+            The provided user credentials are valid, but the user does not have
+            the necessary permissions to perform this operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: NoAccessError
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You need the "UPDATE_ADDON" permission to perform this action in the
+                      "development" environment.
+      tags:
+        - Environments
+  /environments/update/{name}:
+    put:
+      operationId: updateEnvironment
+      x-required-permissions: [ENVIRONMENT_UPDATE]
+      summary: Updates an environment by name
+      description: >-
+        **Enterprise feature**
+
+
+        Given an environment by name updates the environment with the given
+        payload. Note that `name`, `enabled` and `protected` cannot be changed
+        by this API
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: updateEnvironmentSchema
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/updateEnvironmentSchema"
+      responses:
+        "200":
+          description: environmentSchema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentSchema"
+        "400":
+          description: The request data does not match what we expect.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: ValidationError
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      The request payload you provided doesn't conform to the schema. The
+                      .parameters property should be object. You sent [].
+        "401":
+          description:
+            Authorization information is missing or invalid. Provide a valid
+            API token as the `authorization` header, e.g.
+            `authorization:*.*.my-admin-token`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: AuthenticationRequired
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You must log in to use . Your request had no authorization
+                      header, so we could not authorize you. Try logging in at
+                      /auth/simple/login.
+      tags:
+        - Environments
+  /environments/{name}:
+    delete:
+      operationId: removeEnvironment
+      x-required-permissions: [ENVIRONMENT_DELETE]
+      summary: Deletes an environment by name
+      description: >-
+        **Enterprise feature**
+
+
+        Given an existing environment by name, this endpoint will attempt to
+        delete it
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: This response has no body.
+        "400":
+          description: The request data does not match what we expect.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: ValidationError
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      The request payload you provided doesn't conform to the schema. The
+                      .parameters property should be object. You sent [].
+        "401":
+          description:
+            Authorization information is missing or invalid. Provide a valid
+            API token as the `authorization` header, e.g.
+            `authorization:*.*.my-admin-token`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: AuthenticationRequired
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You must log in to use . Your request had no authorization
+                      header, so we could not authorize you. Try logging in at
+                      /auth/simple/login.
+      tags:
+        - Environments
+    get:
+      operationId: getEnvironment
+      x-required-permissions: [ENVIRONMENT_READ]
+      summary: Get the environment with `name`
+      description: Retrieves the environment with `name` if it exists in this
+        instance
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: environmentSchema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/environmentSchema"
+        "401":
+          description:
+            Authorization information is missing or invalid. Provide a valid
+            API token as the `authorization` header, e.g.
+            `authorization:*.*.my-admin-token`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: AuthenticationRequired
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You must log in to use . Your request had no authorization
+                      header, so we could not authorize you. Try logging in at
+                      /auth/simple/login.
+        "403":
+          description:
+            The provided user credentials are valid, but the user does not have
+            the necessary permissions to perform this operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: NoAccessError
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example:
+                      You need the "UPDATE_ADDON" permission to perform this action in the
+                      "development" environment.
+        "404":
+          description: The requested resource was not found.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    description: The ID of the error instance
+                    type: string
+                    example: 9c40958a-daac-400e-98fb-3bb438567008
+                  name:
+                    description: The name of the error kind
+                    type: string
+                    example: NotFoundError
+                  message:
+                    description: A description of what went wrong.
+                    type: string
+                    example: Could not find the addon with ID "12345".
+      tags:
+        - Environments
+
+  /projects/{projectId}/features/{featureName}/environments/{environment}/strategies:
+    post:
+      operationId: createStrategyForFeatureInEnvironment
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Add a strategy to a feature in an environment
+      tags: [Strategies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - $ref: "#/components/parameters/environment"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFeatureStrategyRequest"
+      responses:
+        "200":
+          description: Strategy added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+
+  /projects/{projectId}/features/{featureName}/environments/{environment}/strategies/{strategyId}:
+    get:
+      operationId: getStrategyForFeatureInEnvironment
+      x-required-permissions: [FEATURE_READ]
+      summary: Get details of a specific strategy assignment
+      tags: [Strategies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - $ref: "#/components/parameters/environment"
+        - name: strategyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Strategy details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Strategy"
+    put:
+      operationId: updateStrategyForFeatureInEnvironment
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Update a strategy configuration
+      tags: [Strategies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - $ref: "#/components/parameters/environment"
+        - name: strategyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateFeatureStrategyRequest"
+      responses:
+        "200":
+          description: Strategy updated
+    delete:
+      operationId: deleteStrategyForFeatureInEnvironment
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Delete a strategy from a feature
+      tags: [Strategies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - $ref: "#/components/parameters/environment"
+        - name: strategyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Strategy deleted
+
+  /projects/{projectId}/features/{featureName}/environments/{environment}/on:
+    post:
+      operationId: enableFeature
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Enable feature in environment
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - $ref: "#/components/parameters/environment"
+      responses:
+        "200":
+          description: Feature enabled
+
+  /projects/{projectId}/features/{featureName}/environments/{environment}/off:
+    post:
+      operationId: disableFeature
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Disable feature in environment
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - $ref: "#/components/parameters/environment"
+      responses:
+        "200":
+          description: Feature disabled
+
+  # =========================================================================
+  # DEPENDENCIES
+  # =========================================================================
+  /projects/{projectId}/features/{featureName}/dependencies:
+    post:
+      operationId: addDependency
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Add a parent dependency to a feature
+      tags: [Dependencies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDependencyRequest"
+      responses:
+        "200":
+          description: Dependency added
+    delete:
+      operationId: removeDependencies
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Remove all dependencies for a feature
+      tags: [Dependencies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+      responses:
+        "200":
+          description: All dependencies removed
+
+  /projects/{projectId}/features/{featureName}/dependencies/{parentFeature}:
+    delete:
+      operationId: removeDependency
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Remove a specific parent dependency
+      tags: [Dependencies]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - name: parentFeature
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The name of the parent feature
+      responses:
+        "200":
+          description: Dependency removed
+
+  # =========================================================================
+  # CHANGE REQUESTS
+  # =========================================================================
+  /projects/{projectId}/change-requests/config:
+    get:
+      operationId: getChangeRequestConfig
+      x-required-permissions: [CHANGE_REQUEST_READ]
+      summary: Get change request configuration
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: Project change request configuration
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChangeRequestConfig"
+
+  /projects/{projectId}/change-requests:
+    get:
+      operationId: listChangeRequests
+      x-required-permissions: [CHANGE_REQUEST_READ]
+      summary: List change requests
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: List of change requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChangeRequest"
+    post:
+      operationId: createChangeRequest
+      x-required-permissions: [CHANGE_REQUEST_CREATE]
+      summary: Create a new change request
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, environment, changes]
+              properties:
+                title:
+                  type: string
+                environment:
+                  type: string
+                changes:
+                  type: array
+                  items:
+                    type: object
+                    required: [feature, action, payload]
+                    properties:
+                      feature:
+                        type: string
+                      action:
+                        type: string
+                        description: "The action to perform (e.g., update-enabled, add-strategy, delete-strategy, update-strategy, archive-feature)"
+                      payload:
+                        type: object
+                scheduledAt:
+                  type: string
+                  format: date-time
+                  description: "The date and time when the change request is scheduled to be applied. If missing, it can be applied immediately after approval."
+      responses:
+        "201":
+          description: Change request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+
+  /projects/{projectId}/change-requests/{changeRequestId}:
+    get:
+      operationId: getChangeRequest
+      x-required-permissions: [CHANGE_REQUEST_READ]
+      summary: Get specific change request
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/changeRequestId"
+      responses:
+        "200":
+          description: Change request details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+    delete:
+      operationId: deleteChangeRequest
+      x-required-permissions: [CHANGE_REQUEST_DELETE]
+      summary: Delete change request
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/changeRequestId"
+      responses:
+        "200":
+          description: Change request deleted
+    patch:
+      operationId: addChangesToRequest
+      x-required-permissions: [CHANGE_REQUEST_UPDATE]
+      summary: Add changes to an existing change request
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/changeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [changes]
+              properties:
+                changes:
+                  type: array
+                  items:
+                    type: object
+                    required: [feature, action, payload]
+                    properties:
+                      feature:
+                        type: string
+                      action:
+                        type: string
+                      payload:
+                        type: object
+      responses:
+        "200":
+          description: Changes added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeRequest"
+
+  /projects/{projectId}/change-requests/{changeRequestId}/state:
+    put:
+      operationId: updateChangeRequestState
+      x-required-permissions: [CHANGE_REQUEST_UPDATE]
+      summary: Update change request state (Approve/Apply/Reject)
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/changeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                state:
+                  type: string
+                  enum:
+                    [Approved, Applied, Cancelled, In review, Rejected, Draft]
+      responses:
+        "200":
+          description: State updated
+
+  /projects/{projectId}/change-requests/{changeRequestId}/approvals:
+    post:
+      operationId: approveChangeRequest
+      x-required-permissions: [CHANGE_REQUEST_UPDATE]
+      summary: Approve a change request
+      tags: [Change Requests]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/changeRequestId"
+      responses:
+        "200":
+          description: Change request approved
+
+  # =========================================================================
+  # SEGMENTS
+  # =========================================================================
+  /segments:
+    description: A segment is a reusable collection of strategy constraints. Feature flags have one or more activation strategies that define how and when a feature is shown, for example, to a percentage of users, to a specific group, or only in certain environments.
+    get:
+      operationId: listSegments
+      x-required-permissions: [SEGMENT_READ]
+      summary: List all segments
+      tags: [Segments]
+      responses:
+        "200":
+          description: List of segments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  segments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Segment"
+    post:
+      operationId: createSegment
+      summary: Create a new segment
+      tags: [Segments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSegmentRequest"
+      responses:
+        "201":
+          description: Segment created
+
+  /segments/{segmentId}:
+    get:
+      operationId: getSegment
+      x-required-permissions: [SEGMENT_READ]
+      summary: Get a segment
+      tags: [Segments]
+      parameters:
+        - $ref: "#/components/parameters/segmentId"
+      responses:
+        "200":
+          description: Segment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Segment"
+    put:
+      operationId: updateSegment
+      x-required-permissions: [SEGMENT_UPDATE]
+      summary: Update a segment
+      tags: [Segments]
+      parameters:
+        - $ref: "#/components/parameters/segmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSegmentRequest"
+      responses:
+        "200":
+          description: Segment updated
+    delete:
+      operationId: deleteSegment
+      x-required-permissions: [SEGMENT_DELETE]
+      summary: Delete a segment
+      tags: [Segments]
+      parameters:
+        - $ref: "#/components/parameters/segmentId"
+      responses:
+        "200":
+          description: Segment deleted
+
+  # =========================================================================
+  # CONTEXT
+  # =========================================================================
+  /context:
+    get:
+      operationId: listContextFields
+      summary: Get all context fields
+      tags: [Context]
+      responses:
+        "200":
+          description: List of context fields
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContextField"
+    post:
+      operationId: createContextField
+      summary: Create a context field
+      tags: [Context]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContextField"
+      responses:
+        "201":
+          description: Context field created
+
+  /context/{contextField}:
+    put:
+      operationId: updateContextField
+      summary: Update a context field
+      tags: [Context]
+      parameters:
+        - name: contextField
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContextField"
+      responses:
+        "200":
+          description: Context field updated
+    delete:
+      operationId: deleteContextField
+      summary: Delete a context field
+      tags: [Context]
+      parameters:
+        - name: contextField
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Context field deleted
+
+  /context/{contextField}/legal-values:
+    post:
+      operationId: addLegalValueToContextField
+      summary: Add a legal value to a context field
+      tags: [Context]
+      parameters:
+        - name: contextField
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LegalValue"
+      responses:
+        "200":
+          description: Legal value added
+
+  /context/{contextField}/legal-values/{value}:
+    delete:
+      operationId: removeLegalValueFromContextField
+      summary: Remove a legal value from a context field
+      tags: [Context]
+      parameters:
+        - name: contextField
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: value
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Legal value removed
+
+  # =========================================================================
+  # GLOBAL STRATEGY DEFINITIONS
+  # =========================================================================
+  /strategies:
+    get:
+      operationId: listStrategies
+      summary: List all strategy definitions
+      tags: [Strategies]
+      responses:
+        "200":
+          description: List of strategies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  strategies:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Strategy"
+    post:
+      operationId: createStrategy
+      summary: Create a new strategy definition
+      tags: [Strategies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStrategyRequest"
+      responses:
+        "201":
+          description: Strategy created
+
+  /strategies/{name}:
+    put:
+      operationId: updateStrategyDefinition
+      summary: Update a strategy definition
+      tags: [Strategies]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStrategyRequest"
+      responses:
+        "200":
+          description: Strategy updated
+        "409":
+          description: Strategy is in use and cannot be updated
+
+  # =========================================================================
+  # TAGS
+  # =========================================================================
+  /tags:
+    get:
+      operationId: listTags
+      summary: List all tags
+      tags: [FeatureTag]
+      responses:
+        "200":
+          description: List of tags
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tags:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FeatureTag"
+    post:
+      operationId: createTag
+      summary: Create a new tag
+      tags: [FeatureTag]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeatureTag"
+      responses:
+        "201":
+          description: Tag created
+
+  /tag-types:
+    get:
+      operationId: listTagTypes
+      summary: List all tag types
+      tags: [FeatureTag]
+      responses:
+        "200":
+          description: List of tag types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tagTypes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TagType"
+
+  /features/{featureName}/tags:
+    post:
+      operationId: addTagToFeature
+      summary: Add a tag to a feature
+      tags: [FeatureTag]
+      parameters:
+        - $ref: "#/components/parameters/featureName"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeatureTag"
+      responses:
+        "201":
+          description: Tag added to feature
+
+# =========================================================================
+# COMPONENTS
+# =========================================================================
+components:
+  securitySchemes:
+    OidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://server.redmoon.ch/auth/oidc/.well-known/openid-configuration
+
+  parameters:
+    projectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The ID of the project (e.g. 'default')
+    featureName:
+      name: featureName
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The name of the feature toggle
+    environment:
+      name: environment
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The environment name (e.g. 'development', 'production')
+    changeRequestId:
+      name: changeRequestId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: The ID of the change request
+    segmentId:
+      name: segmentId
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: The ID of the segment
+
+  schemas:
+    # --- Feature Schemas ---
+    Feature:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+        project:
+          type: string
+        stale:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        impressionData:
+          type: boolean
+          description: Whether to collect impression data for this feature
+        environments:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FeatureEnvironment"
+        tags:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/FeatureTag"
+
+    CreateFeatureRequest:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [release, experiment, operational, kill-switch, permission]
+        impressionData:
+          type: boolean
+          description: Whether to collect impression data for this feature
+
+    UpdateFeatureRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        type:
+          type: string
+        stale:
+          type: boolean
+        impressionData:
+          type: boolean
+
+    FeatureEnvironment:
+      type: object
+      properties:
+        name:
+          type: string
+        enabled:
+          type: boolean
+        strategies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Strategy"
+
+    # --- Strategy Schemas ---
+    Strategy:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+        editable:
+          type: boolean
+          description: Whether this strategy can be edited (predefined strategies cannot be edited)
+        deprecated:
+          type: boolean
+          description: "Whether this strategy is deprecated (note: predefined strategies cannot be deprecated)"
+        parameters:
+          type: array
+          items:
+            $ref: "#/components/schemas/StrategyParameter"
+        segments:
+          type: array
+          items:
+            type: integer
+            description: IDs of segments applied to this strategy
+
+    StrategyParameter:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          description: The name of the parameter.
+          example: percentage
+        type:
+          type: string
+          description: The type of the parameter.
+          enum:
+            - string
+            - percentage
+            - list
+            - number
+            - boolean
+          example: percentage
+        description:
+          type: string
+          description: A description of this strategy parameter.
+          example: How many percent of users should see this feature?
+        required:
+          type: boolean
+          description: Whether this parameter must be configured when using the strategy.
+          default: false
+          example: false
+        value:
+          type: string
+          description: The value of the parameter when used in a strategy instance.
+
+    CreateStrategyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parameters:
+          type: array
+          description: The parameter list lets you pass arguments to your custom activation strategy.
+          items:
+            $ref: "#/components/schemas/StrategyParameter"
+        segments:
+          type: array
+          items:
+            type: integer
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+
+    CreateFeatureStrategyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name/type of the strategy (e.g., 'flexibleRollout').
+        title:
+          type: string
+          description: A custom title for this specific strategy instance.
+        disabled:
+          type: boolean
+          default: false
+        sortOrder:
+          type: number
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs of the actual parameter values.
+        segments:
+          type: array
+          items:
+            type: integer
+            description: IDs of segments applied to this strategy
+
+    UpdateFeatureStrategyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: The name/type of the strategy (e.g., 'flexibleRollout').
+        title:
+          type: string
+          description: A custom title for this specific strategy instance.
+        disabled:
+          type: boolean
+          default: false
+        sortOrder:
+          type: number
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs of the actual parameter values.
+        segments:
+          type: array
+          items:
+            type: integer
+            description: IDs of segments applied to this strategy
+
+    UpdateStrategyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        parameters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs of the actual parameter values.
+        segments:
+          type: array
+          items:
+            type: integer
+            description: IDs of segments applied to this strategy
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+
+    Constraint:
+      type: object
+      properties:
+        contextName:
+          type: string
+        operator:
+          type: string
+          enum:
+            [
+              IN,
+              NOT_IN,
+              STR_ENDS_WITH,
+              STR_STARTS_WITH,
+              STR_CONTAINS,
+              NUM_EQ,
+              NUM_GT,
+              NUM_LT,
+              DATE_AFTER,
+              DATE_BEFORE,
+              SEMVER_EQ,
+              SEMVER_GT,
+              SEMVER_LT,
+            ]
+        values:
+          type: array
+          items:
+            type: string
+        caseInsensitive:
+          type: boolean
+        inverted:
+          type: boolean
+
+    # --- Project Schemas ---
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        health:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateProjectRequest:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    createEnvironmentSchema:
+      description: Data required to create a new
+        [environment](/reference/environments)
+      type: object
+      properties:
+        name:
+          description:
+            The name of the environment. Must be a URL-friendly string
+            according to [RFC 3968, section
+            2.3](https://www.rfc-editor.org/rfc/rfc3986#section-2.3)
+          type: string
+          pattern: ^[a-zA-Z0-9~_.-]+$
+        type:
+          description: |-
+            The [type of environment](/reference/environments#environment-types) you would like to create.  officially recognizes the following values:
+            - `development`
+            - `test`
+            - `preproduction`
+            - `production`
+
+            If you pass a string that is not one of the recognized values,  will accept it, but it will carry no special semantics.
+          type: string
+          minLength: 1
+        enabled:
+          description:
+            Newly created environments are enabled by default. Set this
+            property to `false` to create the environment in a disabled state.
+          type: boolean
+        sortOrder:
+          description: Defines where in the list of environments to place this
+            environment. The list uses an ascending sort, so lower numbers are
+            shown first. You can change this value later.
+          type: integer
+        requiredApprovals:
+          description:
+            Experimental field. The number of approvals required before a
+            change request can be applied in this environment.
+          type: integer
+          example: 3
+          minimum: 1
+          nullable: true
+      required:
+        - name
+        - type
+    environmentsSchema:
+      description: A versioned list of environments
+      type: object
+      properties:
+        version:
+          description: Version of the environments schema
+          type: integer
+          example: 1
+        environments:
+          description: List of environments
+          type: array
+          items:
+            $ref: "#/components/schemas/environmentSchema"
+      additionalProperties: true
+      required:
+        - version
+        - environments
+    environmentSchema:
+      description: A definition of the project environment
+      type: object
+      properties:
+        name:
+          description: The name of the environment
+          type: string
+          example: my-dev-env
+        type:
+          description: The [type of
+            environment](/reference/environments#environment-types).
+          type: string
+          example: development
+        enabled:
+          description:
+            "`true` if the environment is enabled for the project, otherwise
+            `false`."
+          type: boolean
+          example: true
+        protected:
+          description:
+            "`true` if the environment is protected, otherwise `false`. A
+            *protected* environment can not be deleted."
+          type: boolean
+          example: true
+        sortOrder:
+          description:
+            Priority of the environment in a list of environments, the lower
+            the value, the higher up in the list the environment will appear.
+            Needs to be an integer
+          type: integer
+          example: 3
+        projectCount:
+          description: The number of projects with this environment
+          type: integer
+          example: 10
+          minimum: 0
+          nullable: true
+        enabledToggleCount:
+          description: The number of enabled toggles for the project environment
+          type: integer
+          example: 10
+          minimum: 0
+          nullable: true
+        requiredApprovals:
+          description:
+            Experimental field. The number of approvals required before a
+            change request can be applied in this environment.
+          type: integer
+          example: 3
+          minimum: 1
+          nullable: true
+      additionalProperties: true
+      required:
+        - name
+        - type
+        - enabled
+        - protected
+        - sortOrder
+    updateEnvironmentSchema:
+      description: Data used to update an
+        [environment](/reference/environments).
+      type: object
+      properties:
+        type:
+          description: Updates the type of environment (i.e. development or production).
+          type: string
+        sortOrder:
+          description: Changes the sort order of this environment.
+          type: integer
+        requiredApprovals:
+          type: integer
+    # --- Context Schemas ---
+    ContextField:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        stickiness:
+          type: boolean
+        sortOrder:
+          type: integer
+        legalValues:
+          type: array
+          items:
+            $ref: "#/components/schemas/LegalValue"
+
+    LegalValue:
+      type: object
+      properties:
+        value:
+          description: a value that is allowed for this context field
+          type: string
+          example: "fish"
+        description:
+          description: description of the legal value
+          type: string
+          example: "lives in the sea"
+
+    # --- Change Request Schemas ---
+    ChangeRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+          enum: [Draft, In review, Approved, Applied, Cancelled, Rejected]
+        environment:
+          type: string
+        project:
+          type: string
+        minApprovals:
+          type: integer
+        createdBy:
+          type: object
+          properties:
+            username:
+              type: string
+        scheduledAt:
+          type: string
+          format: date-time
+          description: "The date and time when the change request is scheduled to be applied."
+        features:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              changes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    action:
+                      type: string
+                    payload:
+                      type: object
+
+    ChangeRequestConfig:
+      type: object
+      properties:
+        environment:
+          type: string
+        type:
+          type: string
+        changeRequestEnabled:
+          type: boolean
+        requiredApprovals:
+          type: integer
+
+    # --- Segment Schemas ---
+    Segment:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+        usedInFeatures:
+          type: integer
+        usedInProjects:
+          type: integer
+
+    CreateSegmentRequest:
+      type: object
+      required:
+        - name
+        - constraints
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        project:
+          type: string
+          description: Optional project scope
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+
+    UpdateSegmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        constraints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Constraint"
+
+    # --- Tag Schemas ---
+    FeatureTag:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          example: "simple"
+        value:
+          type: string
+          example: "payment-team"
+
+    TagType:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        icon:
+          type: string
+
+    # --- Dependency Schemas ---
+    CreateDependencyRequest:
+      type: object
+      required:
+        - feature
+      properties:
+        feature:
+          type: string
+          description: The name of the parent feature
+        enabled:
+          type: boolean
+          description: Whether the parent must be enabled (default true)
+        variants:
+          type: array
+          items:
+            type: string
+          description: List of specific variants the parent must resolve to

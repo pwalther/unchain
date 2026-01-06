@@ -1,0 +1,26 @@
+databaseChangeLog:
+      - changeSet:
+              id: 010-create-environment-table
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: environment
+                            columns:
+                                  - column:
+                                          name: name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                primaryKey: true
+                                                nullable: false
+                                  - column:
+                                          name: type
+                                          type: VARCHAR(50)
+                                  - column:
+                                          name: enabled
+                                          type: BOOLEAN
+                                  - column:
+                                          name: sort_order
+                                          type: INT
+                                  - column:
+                                          name: required_approvals
+                                          type: INT

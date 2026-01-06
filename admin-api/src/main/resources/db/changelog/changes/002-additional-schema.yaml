@@ -1,0 +1,155 @@
+databaseChangeLog:
+      - changeSet:
+              id: 004-create-change-request-tables
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: change_request
+                            columns:
+                                  - column:
+                                          name: id
+                                          type: INT
+                                          autoIncrement: true
+                                          constraints:
+                                                primaryKey: true
+                                                nullable: false
+                                  - column:
+                                          name: title
+                                          type: VARCHAR(255)
+                                  - column:
+                                          name: state
+                                          type: VARCHAR(50)
+                                  - column:
+                                          name: environment
+                                          type: VARCHAR(255)
+                                  - column:
+                                          name: project_id
+                                          type: VARCHAR(255)
+                                  - column:
+                                          name: min_approvals
+                                          type: INT
+
+      - changeSet:
+              id: 005-create-context-field-tables
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: context_field
+                            columns:
+                                  - column:
+                                          name: name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                primaryKey: true
+                                                nullable: false
+                                  - column:
+                                          name: description
+                                          type: VARCHAR(1000)
+                                  - column:
+                                          name: stickiness
+                                          type: BOOLEAN
+                                  - column:
+                                          name: sort_order
+                                          type: INT
+
+      - changeSet:
+              id: 006-create-strategy-definition-tables
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: strategy_definition
+                            columns:
+                                  - column:
+                                          name: name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                primaryKey: true
+                                                nullable: false
+                                  - column:
+                                          name: description
+                                          type: VARCHAR(1000)
+
+      - changeSet:
+              id: 007-create-tag-tables
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: tag_type
+                            columns:
+                                  - column:
+                                          name: name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                primaryKey: true
+                                                nullable: false
+                                  - column:
+                                          name: description
+                                          type: VARCHAR(1000)
+                                  - column:
+                                          name: icon
+                                          type: VARCHAR(255)
+                    - createTable:
+                            tableName: tag
+                            columns:
+                                  - column:
+                                          name: type
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: tag_value
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                    - addPrimaryKey:
+                            tableName: tag
+                            columnNames: type, tag_value
+                            constraintName: pk_tag
+                    - addForeignKeyConstraint:
+                            baseTableName: tag
+                            baseColumnNames: type
+                            referencedTableName: tag_type
+                            referencedColumnNames: name
+                            constraintName: fk_tag_type
+
+      - changeSet:
+              id: 008-create-feature-dependency-table
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: feature_dependency
+                            columns:
+                                  - column:
+                                          name: id
+                                          type: INT
+                                          autoIncrement: true
+                                          constraints:
+                                                primaryKey: true
+                                  - column:
+                                          name: feature_name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: parent_feature
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: enabled
+                                          type: BOOLEAN
+                                          defaultValueBoolean: true
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_dependency
+                            baseColumnNames: feature_name
+                            referencedTableName: feature
+                            referencedColumnNames: name
+                            constraintName: fk_dependency_feature
+                    # Self-referencing FK might be tricky if parent doesn't exist yet in import, but usually safe to add.
+                    # Assuming parent must exist.
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_dependency
+                            baseColumnNames: parent_feature
+                            referencedTableName: feature
+                            referencedColumnNames: name
+                            constraintName: fk_dependency_parent

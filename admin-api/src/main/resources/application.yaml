@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: unchain
+  datasource:
+    url: jdbc:h2:mem:unchaindb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    defer-datasource-initialization: false
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  security:
+    oauth2:
+      client:
+        registration:
+          oidc:
+            client-id: ${OIDC_CLIENT_ID:unchain}
+            client-secret: ${OIDC_CLIENT_SECRET:PBC9LOputGatFfVUzMMFJbWttmHe8zFc}
+            scope: openid, profile, email
+            redirect-uri: "https://192.168.1.36:8888/login/oauth2/code/{registrationId}"
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+        provider:
+          oidc:
+            issuer-uri: ${OIDC_ISSUER_URI:https://server.redmoon.ch/auth/oidc}
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:https://server.redmoon.ch/auth/oidc}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+logbook:
+  format:
+    type: json
+  filter:
+    enabled: true
+
+unchain:
+  webhook:
+    enabled: ${WEBHOOK_ENABLED:false}
+    url: ${WEBHOOK_URL:http://localhost:9000/webhook}
+    retry:
+      max-attempts: ${WEBHOOK_RETRY_MAX_ATTEMPTS:5}
+      initial-delay-ms: ${WEBHOOK_RETRY_DELAY_MS:1000}
+      multiplier: ${WEBHOOK_RETRY_MULTIPLIER:2.0}
+  housekeeping:
+    retention-period-months: 1
+    audit-log-retention-years: 1
+    audit-log-cron: "0 0 2 * * *"
+  security:
+    authorization-provider-class: ch.redmoon.unchain.security.TrustAllAuthorizationProvider
+    oauth2:
+      base-uri: /login/oauth2/code/oidc
+      success-url: https://192.168.1.36:3333
+    cors:
+      allowed-origins: "http://localhost:3000, https://server.redmoon.ch, https://192.168.1.36:3333"
+
+logging:
+  level:
+    org.springframework.security: TRACE
+    org.springframework.security.oauth2: TRACE
+    org.springframework.web.client.RestTemplate: TRACE

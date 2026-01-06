@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-archived-to-project
+      author: pwalther
+      changes:
+        - addColumn:
+            tableName: project
+            columns:
+              - column:
+                  name: archived
+                  type: BOOLEAN
+                  defaultValueBoolean: false

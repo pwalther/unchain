@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-create-change-request-change-table
+      author: pwalther
+      changes:
+        - createTable:
+            tableName: change_request_change
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: change_request_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: feature_name
+                  type: VARCHAR(255)
+              - column:
+                  name: action
+                  type: VARCHAR(50)
+              - column:
+                  name: payload
+                  type: TEXT
+        - addForeignKeyConstraint:
+            baseTableName: change_request_change
+            baseColumnNames: change_request_id
+            referencedTableName: change_request
+            referencedColumnNames: id
+            constraintName: fk_change_request_change_id

@@ -1,0 +1,110 @@
+databaseChangeLog:
+      - changeSet:
+              id: 013-create-feature-strategy-tables
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: feature_strategy
+                            columns:
+                                  - column:
+                                          name: id
+                                          type: INT
+                                          autoIncrement: true
+                                          constraints:
+                                                primaryKey: true
+                                  - column:
+                                          name: feature_name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: environment_name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: strategy_name
+                                          type: VARCHAR(255)
+                                          constraints:
+                                                nullable: false
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_strategy
+                            baseColumnNames: feature_name
+                            referencedTableName: feature
+                            referencedColumnNames: name
+                            constraintName: fk_fs_feature
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_strategy
+                            baseColumnNames: environment_name
+                            referencedTableName: environment
+                            referencedColumnNames: name
+                            constraintName: fk_fs_environment
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_strategy
+                            baseColumnNames: strategy_name
+                            referencedTableName: strategy_definition
+                            referencedColumnNames: name
+                            constraintName: fk_fs_strategy
+
+      - changeSet:
+              id: 014-create-feature-strategy-constraint-tables
+              author: pwalther
+              changes:
+                    - createTable:
+                            tableName: feature_strategy_constraint
+                            columns:
+                                  - column:
+                                          name: id
+                                          type: INT
+                                          autoIncrement: true
+                                          constraints:
+                                                primaryKey: true
+                                  - column:
+                                          name: feature_strategy_id
+                                          type: INT
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: context_name
+                                          type: VARCHAR(255)
+                                  - column:
+                                          name: operator
+                                          type: VARCHAR(50)
+                                  - column:
+                                          name: case_insensitive
+                                          type: BOOLEAN
+                                          defaultValueBoolean: false
+                                  - column:
+                                          name: inverted
+                                          type: BOOLEAN
+                                          defaultValueBoolean: false
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_strategy_constraint
+                            baseColumnNames: feature_strategy_id
+                            referencedTableName: feature_strategy
+                            referencedColumnNames: id
+                            constraintName: fk_fsc_feature_strategy
+
+                    - createTable:
+                            tableName: feature_strategy_constraint_value
+                            columns:
+                                  - column:
+                                          name: id
+                                          type: INT
+                                          autoIncrement: true
+                                          constraints:
+                                                primaryKey: true
+                                  - column:
+                                          name: constraint_id
+                                          type: INT
+                                          constraints:
+                                                nullable: false
+                                  - column:
+                                          name: constraint_value
+                                          type: VARCHAR(1000)
+                    - addForeignKeyConstraint:
+                            baseTableName: feature_strategy_constraint_value
+                            baseColumnNames: constraint_id
+                            referencedTableName: feature_strategy_constraint
+                            referencedColumnNames: id
+                            constraintName: fk_fscv_constraint

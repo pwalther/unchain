@@ -1,0 +1,89 @@
+databaseChangeLog:
+    - changeSet:
+          id: 001-create-project-table
+          author: pwalther
+          changes:
+              - createTable:
+                    tableName: project
+                    columns:
+                        - column:
+                              name: id
+                              type: VARCHAR(255)
+                              constraints:
+                                  primaryKey: true
+                                  nullable: false
+                        - column:
+                              name: name
+                              type: VARCHAR(255)
+                              constraints:
+                                  nullable: false
+                        - column:
+                              name: description
+                              type: VARCHAR(1000)
+                        - column:
+                              name: health
+                              type: INT
+                        - column:
+                              name: updated_at
+                              type: TIMESTAMP
+
+    - changeSet:
+          id: 002-create-feature-table
+          author: pwalther
+          changes:
+              - createTable:
+                    tableName: feature
+                    columns:
+                        - column:
+                              name: name
+                              type: VARCHAR(255)
+                              constraints:
+                                  primaryKey: true
+                                  nullable: false
+                        - column:
+                              name: description
+                              type: VARCHAR(1000)
+                        - column:
+                              name: type
+                              type: VARCHAR(50)
+                        - column:
+                              name: project_id
+                              type: VARCHAR(255)
+                        - column:
+                              name: stale
+                              type: BOOLEAN
+                              defaultValueBoolean: false
+                        - column:
+                              name: created_at
+                              type: TIMESTAMP
+                        - column:
+                              name: impression_data
+                              type: BOOLEAN
+                              defaultValueBoolean: false
+              - addForeignKeyConstraint:
+                    baseTableName: feature
+                    baseColumnNames: project_id
+                    referencedTableName: project
+                    referencedColumnNames: id
+                    constraintName: fk_feature_project
+
+    - changeSet:
+          id: 003-create-segment-table
+          author: pwalther
+          changes:
+              - createTable:
+                    tableName: segment
+                    columns:
+                        - column:
+                              name: id
+                              type: INT
+                              autoIncrement: true
+                              constraints:
+                                  primaryKey: true
+                                  nullable: false
+                        - column:
+                              name: name
+                              type: VARCHAR(255)
+                        - column:
+                              name: description
+                              type: VARCHAR(1000)

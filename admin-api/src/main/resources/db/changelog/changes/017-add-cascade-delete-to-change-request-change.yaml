@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-add-cascade-delete-to-change-request-change
+      author: pwalther
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: change_request_change
+            constraintName: fk_change_request_change_id
+        - addForeignKeyConstraint:
+            baseTableName: change_request_change
+            baseColumnNames: change_request_id
+            referencedTableName: change_request
+            referencedColumnNames: id
+            constraintName: fk_change_request_change_id
+            onDelete: CASCADE

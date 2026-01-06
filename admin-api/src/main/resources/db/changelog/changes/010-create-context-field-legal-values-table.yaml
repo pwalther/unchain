@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-create-context-field-legal-values-table
+      author: pwalther
+      changes:
+        - createTable:
+            tableName: context_field_legal_value
+            columns:
+              - column:
+                  name: context_field_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: legal_value
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1000)
+        - addPrimaryKey:
+            tableName: context_field_legal_value
+            columnNames: context_field_name, legal_value
+            constraintName: pk_context_field_legal_value
+        - addForeignKeyConstraint:
+            baseTableName: context_field_legal_value
+            baseColumnNames: context_field_name
+            referencedTableName: context_field
+            referencedColumnNames: name
+            constraintName: fk_legal_value_context_field
+            onDelete: CASCADE

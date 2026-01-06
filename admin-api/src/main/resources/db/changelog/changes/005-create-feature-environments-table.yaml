@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-create-feature-environments-table
+      author: pwalther
+      changes:
+        - createTable:
+            tableName: feature_environments
+            columns:
+              - column:
+                  name: feature_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: environment_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: feature_environments
+            columnNames: feature_name, environment_name
+            constraintName: pk_feature_environments
+        - addForeignKeyConstraint:
+            baseTableName: feature_environments
+            baseColumnNames: feature_name
+            referencedTableName: feature
+            referencedColumnNames: name
+            constraintName: fk_fe_feature
+        - addForeignKeyConstraint:
+            baseTableName: feature_environments
+            baseColumnNames: environment_name
+            referencedTableName: environment
+            referencedColumnNames: name
+            constraintName: fk_fe_environment

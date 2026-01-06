@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-insert-sample-data
+      author: pwalther
+      changes:
+        - insert:
+            tableName: environment
+            columns:
+              - column: { name: name, value: "Test" }
+              - column: { name: type, value: "test" }
+              - column: { name: enabled, valueBoolean: true }
+              - column: { name: sort_order, valueNumeric: 2 }
+        - insert:
+            tableName: environment
+            columns:
+              - column: { name: name, value: "Production" }
+              - column: { name: type, value: "production" }
+              - column: { name: enabled, valueBoolean: true }
+              - column: { name: sort_order, valueNumeric: 1 }
+              - column: { name: required_approvals, valueNumeric: 1 }
+        - insert:
+            tableName: project
+            columns:
+              - column: { name: id, value: "demo" }
+              - column: { name: name, value: "Demo Project" }
+              - column:
+                  {
+                    name: description,
+                    value: "A project for demonstration purposes",
+                  }
+        - insert:
+            tableName: feature
+            columns:
+              - column: { name: name, value: "SampleFlag" }
+              - column:
+                  {
+                    name: description,
+                    value: "A sample feature flag for testing",
+                  }
+              - column: { name: type, value: "release" }
+              - column: { name: project_id, value: "demo" }
+              - column: { name: created_at, valueDate: "2025-12-19T18:00:00" }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "appName" }
+              - column:
+                  { name: description, value: "The name of the application" }
+              - column: { name: stickiness, valueBoolean: true }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "environment" }
+              - column:
+                  {
+                    name: description,
+                    value: "The environment (e.g. production, staging)",
+                  }
+              - column: { name: stickiness, valueBoolean: false }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "userId" }
+              - column: { name: description, value: "The ID of the user" }
+              - column: { name: stickiness, valueBoolean: true }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "sessionId" }
+              - column: { name: description, value: "The ID of the session" }
+              - column: { name: stickiness, valueBoolean: true }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "remoteAddress" }
+              - column: { name: description, value: "The remote IP address" }
+              - column: { name: stickiness, valueBoolean: false }

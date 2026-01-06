@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-add-editable-to-strategy-definition
+      author: pwalther
+      changes:
+        - addColumn:
+            tableName: strategy_definition
+            columns:
+              - column:
+                  name: editable
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false

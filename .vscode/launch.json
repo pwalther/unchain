@@ -1,0 +1,35 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "UnchainApplication",
+            "request": "launch",
+            "mainClass": "ch.redmoon.unchain.UnchainApplication",
+            "projectName": "unchain2-admin-api"
+        },
+        {
+            "type": "java",
+            "name": "unchainApplication",
+            "request": "launch",
+            "mainClass": "ch.redmoon.unchain.unchainApplication",
+            "projectName": "unchain-admin-api"
+        },
+        {
+            "type": "java",
+            "name": "unchainApplication",
+            "request": "launch",
+            "mainClass": "ch.redmoon.unchain.unchainApplication",
+            "projectName": "unchain-admin-api"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-unchainApplication<unchain>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "ch.redmoon.unchain.unchainApplication",
+            "projectName": "unchain",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

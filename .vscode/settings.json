@@ -1,0 +1,9 @@
+{
+    "maven.terminal.favorites": [
+        {
+            "command": "clean compile",
+            "debug": false
+        }
+    ],
+    "java.debug.settings.onBuildFailureProceed": true
+}

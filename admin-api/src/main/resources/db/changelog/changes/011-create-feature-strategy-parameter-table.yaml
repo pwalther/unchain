@@ -1,0 +1,33 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-create-feature-strategy-parameter-table
+      author: pwalther
+      changes:
+        - createTable:
+            tableName: feature_strategy_parameter
+            columns:
+              - column:
+                  name: id
+                  type: INT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: feature_strategy_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: parameter_value
+                  type: VARCHAR(2000)
+        - addForeignKeyConstraint:
+            baseTableName: feature_strategy_parameter
+            baseColumnNames: feature_strategy_id
+            referencedTableName: feature_strategy
+            referencedColumnNames: id
+            constraintName: fk_fsp_feature_strategy

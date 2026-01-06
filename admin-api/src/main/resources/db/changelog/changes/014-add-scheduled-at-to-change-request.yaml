@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-add-scheduled-at-to-change-request
+      author: pwalther
+      changes:
+        - addColumn:
+            tableName: change_request
+            columns:
+              - column:
+                  name: scheduled_at
+                  type: DATETIME
