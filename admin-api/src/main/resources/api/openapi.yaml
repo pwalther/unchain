@@ -1321,6 +1321,11 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/FeatureTag"
+        variants:
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/Variant"
 
     CreateFeatureRequest:
       type: object
@@ -1338,6 +1343,10 @@ components:
         impressionData:
           type: boolean
           description: Whether to collect impression data for this feature
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
 
     UpdateFeatureRequest:
       type: object
@@ -1346,10 +1355,15 @@ components:
           type: string
         type:
           type: string
+          enum: [release, experiment, operational, kill-switch, permission]
         stale:
           type: boolean
         impressionData:
           type: boolean
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
 
     FeatureEnvironment:
       type: object
@@ -1392,6 +1406,10 @@ components:
           items:
             type: integer
             description: IDs of segments applied to this strategy
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
 
     StrategyParameter:
       type: object
@@ -1448,6 +1466,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Constraint"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
 
     CreateFeatureStrategyRequest:
       type: object
@@ -1479,6 +1501,10 @@ components:
           items:
             type: integer
             description: IDs of segments applied to this strategy
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
 
     UpdateFeatureStrategyRequest:
       type: object
@@ -1500,6 +1526,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Constraint"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
         parameters:
           type: object
           additionalProperties:
@@ -1530,6 +1560,42 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Constraint"
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Variant"
+
+    Variant:
+      type: object
+      required:
+        - name
+        - weight
+      properties:
+        name:
+          type: string
+        weight:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Relative weight out of 1000 (0.1% resolution)
+        payload:
+          $ref: "#/components/schemas/VariantPayload"
+        stickiness:
+          type: string
+          description: Context field to use for stickiness (defaults to userId)
+
+    VariantPayload:
+      type: object
+      required:
+        - type
+        - value
+      properties:
+        type:
+          type: string
+          enum: [string, json, number]
+        value:
+          type: string
+          description: The payload value (as a string)
 
     Constraint:
       type: object

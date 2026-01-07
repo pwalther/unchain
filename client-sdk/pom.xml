@@ -26,6 +26,13 @@
             <version>2.15.2</version>
         </dependency>
 
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.9</version>
+        </dependency>
+
         <!-- Hashing for Gradual Rollout -->
         <dependency>
             <groupId>com.google.guava</groupId>

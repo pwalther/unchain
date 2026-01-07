@@ -1,0 +1,86 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-variants-tables
+      author: pwalther
+      changes:
+        - createTable:
+            tableName: feature_variant
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: feature_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: weight
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload_type
+                  type: VARCHAR(50)
+              - column:
+                  name: payload_value
+                  type: TEXT
+              - column:
+                  name: stickiness
+                  type: VARCHAR(255)
+        - addForeignKeyConstraint:
+            baseTableName: feature_variant
+            baseColumnNames: feature_name
+            referencedTableName: feature
+            referencedColumnNames: name
+            constraintName: fk_fv_feature
+            onDelete: CASCADE
+
+        - createTable:
+            tableName: feature_strategy_variant
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: feature_strategy_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: weight
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: payload_type
+                  type: VARCHAR(50)
+              - column:
+                  name: payload_value
+                  type: TEXT
+              - column:
+                  name: stickiness
+                  type: VARCHAR(255)
+        - addForeignKeyConstraint:
+            baseTableName: feature_strategy_variant
+            baseColumnNames: feature_strategy_id
+            referencedTableName: feature_strategy
+            referencedColumnNames: id
+            constraintName: fk_fsv_feature_strategy
+            onDelete: CASCADE

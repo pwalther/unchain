@@ -46,15 +46,15 @@ public class UnchainClientTest {
     public void shouldEvaluateDefaultStrategy() {
         Feature f = new Feature();
         f.setName("test-feature");
-        
+
         FeatureEnvironment fe = new FeatureEnvironment();
         fe.setName(ENV);
         fe.setEnabled(true);
-        
+
         Strategy s = new Strategy();
         s.setName("default");
         fe.setStrategies(List.of(s));
-        
+
         f.setEnvironments(List.of(fe));
         client.addFeature(f);
 
@@ -66,15 +66,15 @@ public class UnchainClientTest {
     public void shouldBeDisabledIfEnvDisabled() {
         Feature f = new Feature();
         f.setName("disabled-feature");
-        
+
         FeatureEnvironment fe = new FeatureEnvironment();
         fe.setName(ENV);
         fe.setEnabled(false);
-        
+
         Strategy s = new Strategy();
         s.setName("default");
         fe.setStrategies(List.of(s));
-        
+
         f.setEnvironments(List.of(fe));
         client.addFeature(f);
 
@@ -86,16 +86,45 @@ public class UnchainClientTest {
     public void shouldReturnBooleanMap() {
         Feature f1 = createFeature("f1", true, "default");
         Feature f2 = createFeature("f2", false, "default");
-        
+
         client.addFeature(f1);
         client.addFeature(f2);
 
         UnchainContext context = UnchainContext.builder().userId("user1").build();
         Map<String, Boolean> map = client.getAllFeaturesEnabled(context);
-        
+
         assertEquals(2, map.size());
         assertTrue(map.get("f1"));
         assertFalse(map.get("f2"));
+    }
+
+    @Test
+    public void shouldReturnVariant() {
+        Feature f = new Feature();
+        f.setName("variant-feature");
+
+        FeatureEnvironment fe = new FeatureEnvironment();
+        fe.setName(ENV);
+        fe.setEnabled(true);
+
+        Strategy s = new Strategy();
+        s.setName("default");
+        fe.setStrategies(List.of(s));
+
+        f.setEnvironments(List.of(fe));
+
+        ch.redmoon.unchain.client.model.Variant v1 = new ch.redmoon.unchain.client.model.Variant();
+        v1.setName("control");
+        v1.setWeight(1000); // 100% control
+        f.setVariants(List.of(v1));
+
+        client.addFeature(f);
+
+        UnchainContext context = UnchainContext.builder().userId("user1").build();
+        ch.redmoon.unchain.client.model.Variant selected = client.getVariant("variant-feature", context);
+
+        assertNotNull(selected);
+        assertEquals("control", selected.getName());
     }
 
     private Feature createFeature(String name, boolean enabled, String strategyName) {

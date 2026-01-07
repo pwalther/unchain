@@ -214,6 +214,24 @@ public class StrategiesController implements StrategiesApi {
             featureStrategy.setParameters(parameterEntities);
         }
 
+        // 6. Handle Variants
+        if (createStrategyRequest.getVariants() != null) {
+            List<FeatureStrategyVariantEntity> variantEntities = new ArrayList<>();
+            for (Variant v : createStrategyRequest.getVariants()) {
+                FeatureStrategyVariantEntity ve = new FeatureStrategyVariantEntity();
+                ve.setName(v.getName());
+                ve.setWeight(v.getWeight());
+                ve.setStickiness(v.getStickiness());
+                if (v.getPayload() != null) {
+                    ve.setPayloadType(v.getPayload().getType().getValue());
+                    ve.setPayloadValue(v.getPayload().getValue());
+                }
+                ve.setFeatureStrategy(featureStrategy);
+                variantEntities.add(ve);
+            }
+            featureStrategy.setVariants(variantEntities);
+        }
+
         FeatureStrategyEntity saved = featureStrategyRepository.save(featureStrategy);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToStrategyDto(saved));
@@ -343,6 +361,22 @@ public class StrategiesController implements StrategiesApi {
             }
         }
 
+        featureStrategy.getVariants().clear();
+        if (updateStrategyRequest.getVariants() != null) {
+            for (Variant v : updateStrategyRequest.getVariants()) {
+                FeatureStrategyVariantEntity ve = new FeatureStrategyVariantEntity();
+                ve.setName(v.getName());
+                ve.setWeight(v.getWeight());
+                ve.setStickiness(v.getStickiness());
+                if (v.getPayload() != null) {
+                    ve.setPayloadType(v.getPayload().getType().getValue());
+                    ve.setPayloadValue(v.getPayload().getValue());
+                }
+                ve.setFeatureStrategy(featureStrategy);
+                featureStrategy.getVariants().add(ve);
+            }
+        }
+
         featureStrategyRepository.save(featureStrategy);
         return ResponseEntity.ok().build();
     }
@@ -418,6 +452,21 @@ public class StrategiesController implements StrategiesApi {
             }).collect(Collectors.toList());
             dto.setParameters(params);
         }
+
+        List<Variant> variants = entity.getVariants().stream().map(v -> {
+            Variant vd = new Variant();
+            vd.setName(v.getName());
+            vd.setWeight(v.getWeight());
+            vd.setStickiness(v.getStickiness());
+            if (v.getPayloadType() != null) {
+                VariantPayload vp = new VariantPayload();
+                vp.setType(VariantPayload.TypeEnum.fromValue(v.getPayloadType()));
+                vp.setValue(v.getPayloadValue());
+                vd.setPayload(vp);
+            }
+            return vd;
+        }).collect(Collectors.toList());
+        dto.setVariants(variants);
 
         return dto;
     }

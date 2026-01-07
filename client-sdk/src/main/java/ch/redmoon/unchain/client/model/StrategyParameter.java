@@ -6,16 +6,16 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class FeatureResponse {
-    @JsonProperty("features")
-    @Builder.Default
-    private List<Feature> features = new ArrayList<>();
+public class StrategyParameter {
+    @JsonProperty("name")
+    private String name;
+
+    @JsonProperty("value")
+    private String value;
 }

@@ -24,6 +24,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.EntityListeners;
 import lombok.Data;
@@ -64,4 +65,6 @@ public class FeatureEntity {
     @ManyToMany(cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "feature_environments", joinColumns = @JoinColumn(name = "feature_name"), inverseJoinColumns = @JoinColumn(name = "environment_name"))
     private List<EnvironmentEntity> environments = new ArrayList<>();
+    @OneToMany(mappedBy = "feature", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FeatureVariantEntity> variants = new ArrayList<>();
 }

@@ -9,6 +9,13 @@ databaseChangeLog:
               - column: { name: name, value: "Test" }
               - column: { name: type, value: "test" }
               - column: { name: enabled, valueBoolean: true }
+              - column: { name: sort_order, valueNumeric: 3 }
+        - insert:
+            tableName: environment
+            columns:
+              - column: { name: name, value: "Pre-Prod" }
+              - column: { name: type, value: "preproduction" }
+              - column: { name: enabled, valueBoolean: true }
               - column: { name: sort_order, valueNumeric: 2 }
         - insert:
             tableName: environment
@@ -46,6 +53,23 @@ databaseChangeLog:
               - column: { name: name, value: "appName" }
               - column:
                   { name: description, value: "The name of the application" }
+              - column: { name: stickiness, valueBoolean: true }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "appVersion" }
+              - column:
+                  { name: description, value: "The version of the application" }
+              - column: { name: stickiness, valueBoolean: true }
+        - insert:
+            tableName: context_field
+            columns:
+              - column: { name: name, value: "channel" }
+              - column:
+                  {
+                    name: description,
+                    value: "The channel of the user session",
+                  }
               - column: { name: stickiness, valueBoolean: true }
         - insert:
             tableName: context_field

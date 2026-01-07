@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unchain Showcase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen flex items-center justify-center p-6">
+    <div
+        class="max-w-xl w-full bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+        <!-- Decorator Gradient -->
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/20 blur-3xl rounded-full"></div>
+        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-indigo-600/20 blur-3xl rounded-full"></div>
+
+        <div class="mb-8 text-center relative">
+            <h1
+                class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent mb-2">
+                Unchain Client Demo
+            </h1>
+            <p class="text-slate-400">Validate features and variants in real-time.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5 ml-1">Project ID</label>
+                    <input type="text" id="project" value="demo"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5 ml-1">Environment</label>
+                    <input type="text" id="environment" value="Test"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all text-sm">
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5 ml-1">Feature Name</label>
+                    <input type="text" id="feature" value="SampleFlag"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5 ml-1">User ID (Sticky
+                        Context)</label>
+                    <input type="text" id="userId" value="user-124"
+                        class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all text-sm">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="checkFeature()" id="checkBtn"
+            class="w-full relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg active:scale-[0.98] overflow-hidden group">
+            <span id="btnText">Check Feature Status</span>
+            <div id="btnLoader" class="hidden absolute inset-0 flex items-center justify-center bg-inherit">
+                <svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+                        fill="none"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+            </div>
+        </button>
+
+        <div id="result" class="hidden mt-8 space-y-4">
+            <div class="p-6 rounded-2xl bg-slate-900/80 border border-slate-700/50 shadow-inner">
+                <div class="flex items-center justify-between mb-5">
+                    <span class="text-sm text-slate-400">Status</span>
+                    <span id="statusBadge"
+                        class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors duration-300"></span>
+                </div>
+
+                <div id="variantInfo" class="space-y-4">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1.5">Active
+                            Variant</span>
+                        <div id="variantName" class="text-lg font-semibold text-white"></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span
+                            class="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1.5">Payload</span>
+                        <pre id="payload"
+                            class="block p-4 bg-black/40 rounded-xl text-xs font-mono text-indigo-300 overflow-x-auto border border-slate-700/50"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function checkFeature() {
+            const btn = document.getElementById('checkBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const userId = document.getElementById('userId').value;
+            const project = document.getElementById('project').value;
+            const environment = document.getElementById('environment').value;
+            const feature = document.getElementById('feature').value;
+
+            const resultDiv = document.getElementById('result');
+            const statusBadge = document.getElementById('statusBadge');
+            const variantName = document.getElementById('variantName');
+            const payload = document.getElementById('payload');
+
+            // Feedback: loading state
+            btn.disabled = true;
+            btnText.style.opacity = '0';
+            btnLoader.classList.remove('hidden');
+            resultDiv.style.opacity = '0.5';
+            resultDiv.style.filter = 'blur(1px)';
+            resultDiv.classList.remove('animate-in', 'fade-in', 'slide-in-from-top-4');
+
+            try {
+                const params = new URLSearchParams({
+                    userId, project, environment, name: feature
+                });
+                const response = await fetch(`/api/feature-check?${params.toString()}`);
+                const data = await response.json();
+
+                // Small delay to ensure the user sees the "checking" state
+                await new Promise(r => setTimeout(r, 400));
+
+                resultDiv.classList.remove('hidden');
+
+                // Animation loop
+                resultDiv.style.opacity = '1';
+                resultDiv.style.filter = 'none';
+                void resultDiv.offsetWidth; // trigger reflow
+                resultDiv.classList.add('animate-in', 'fade-in', 'slide-in-from-top-4');
+
+                if (data.enabled) {
+                    statusBadge.textContent = 'Enabled';
+                    statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]';
+                } else {
+                    statusBadge.textContent = 'Disabled';
+                    statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-500/10 text-pink-400 border border-pink-500/20';
+                }
+
+                variantName.textContent = data.variantName || 'None';
+                payload.textContent = data.payload ? (typeof data.payload === 'object' ? JSON.stringify(data.payload, null, 2) : data.payload) : 'No payload';
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to fetch feature status. Is the sample app running?');
+            } finally {
+                btn.disabled = false;
+                btnText.style.opacity = '1';
+                btnLoader.classList.add('hidden');
+                // Ensure resultDiv is visible/clear if it was blurred
+                resultDiv.style.opacity = '1';
+                resultDiv.style.filter = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

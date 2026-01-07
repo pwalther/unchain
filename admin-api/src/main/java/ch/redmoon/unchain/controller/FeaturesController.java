@@ -18,17 +18,11 @@ package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.FeaturesApi;
 import ch.redmoon.unchain.api.model.*;
-import ch.redmoon.unchain.entity.EnvironmentEntity;
-import ch.redmoon.unchain.entity.FeatureEntity;
-import ch.redmoon.unchain.repository.EnvironmentRepository;
-import ch.redmoon.unchain.repository.FeatureRepository;
-import ch.redmoon.unchain.repository.ProjectRepository;
+import ch.redmoon.unchain.entity.*;
+import ch.redmoon.unchain.repository.*;
+import ch.redmoon.unchain.event.UnchainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import ch.redmoon.unchain.repository.FeatureStrategyRepository;
-import ch.redmoon.unchain.entity.FeatureStrategyEntity;
-import ch.redmoon.unchain.entity.StrategyConstraintValueEntity;
-import ch.redmoon.unchain.event.UnchainEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -94,6 +88,21 @@ public class FeaturesController implements FeaturesApi {
                         entity.setCreatedAt(OffsetDateTime.now());
                         entity.setStale(false);
 
+                        if (createFeatureRequest.getVariants() != null) {
+                            for (Variant v : createFeatureRequest.getVariants()) {
+                                FeatureVariantEntity ve = new FeatureVariantEntity();
+                                ve.setFeature(entity);
+                                ve.setName(v.getName());
+                                ve.setWeight(v.getWeight());
+                                ve.setStickiness(v.getStickiness());
+                                if (v.getPayload() != null) {
+                                    ve.setPayloadType(v.getPayload().getType().getValue());
+                                    ve.setPayloadValue(v.getPayload().getValue());
+                                }
+                                entity.getVariants().add(ve);
+                            }
+                        }
+
                         FeatureEntity saved = featureRepository.saveAndFlush(entity);
                         log.info("Feature '{}' created successfully in project '{}'", featureName, projectId);
 
@@ -128,12 +137,28 @@ public class FeaturesController implements FeaturesApi {
                     // Assuming String in Entity for now or use getValue()
                     // f.setType(updateFeatureRequest.getType().getValue());
                     if (updateFeatureRequest.getType() != null)
-                        f.setType(updateFeatureRequest.getType());
+                        f.setType(updateFeatureRequest.getType().getValue());
 
                     if (updateFeatureRequest.getStale() != null)
                         f.setStale(updateFeatureRequest.getStale());
                     if (updateFeatureRequest.getImpressionData() != null)
                         f.setImpressionData(updateFeatureRequest.getImpressionData());
+
+                    if (updateFeatureRequest.getVariants() != null) {
+                        f.getVariants().clear();
+                        for (Variant v : updateFeatureRequest.getVariants()) {
+                            FeatureVariantEntity ve = new FeatureVariantEntity();
+                            ve.setFeature(f);
+                            ve.setName(v.getName());
+                            ve.setWeight(v.getWeight());
+                            ve.setStickiness(v.getStickiness());
+                            if (v.getPayload() != null) {
+                                ve.setPayloadType(v.getPayload().getType().getValue());
+                                ve.setPayloadValue(v.getPayload().getValue());
+                            }
+                            f.getVariants().add(ve);
+                        }
+                    }
 
                     featureRepository.save(f);
                     return ResponseEntity.ok().<Void>build();
@@ -244,6 +269,7 @@ public class FeaturesController implements FeaturesApi {
         dto.setImpressionData(entity.isImpressionData());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setProject(entity.getProject().getId());
+        dto.setVariants(mapVariants(entity.getVariants()));
 
         // Summary includes environments that are enabled or have strategies
         List<EnvironmentEntity> allEnvs = environmentRepository.findAll();
@@ -281,6 +307,7 @@ public class FeaturesController implements FeaturesApi {
         dto.setImpressionData(entity.isImpressionData());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setProject(entity.getProject().getId());
+        dto.setVariants(mapVariants(entity.getVariants()));
 
         // Full DTO includes ALL environments
         List<EnvironmentEntity> allEnvs = environmentRepository.findAll();
@@ -326,6 +353,53 @@ public class FeaturesController implements FeaturesApi {
         }).collect(Collectors.toList());
         dto.setConstraints(constraints);
 
+        if (entity.getParameters() != null) {
+            List<StrategyParameter> params = entity.getParameters().stream().map(p -> {
+                StrategyParameter sp = new StrategyParameter();
+                sp.setName(p.getName());
+                sp.setValue(p.getValue());
+                return sp;
+            }).collect(Collectors.toList());
+            dto.setParameters(params);
+        }
+
+        dto.setVariants(mapStrategyVariants(entity.getVariants()));
         return dto;
+    }
+
+    private List<Variant> mapStrategyVariants(List<FeatureStrategyVariantEntity> entities) {
+        if (entities == null)
+            return null;
+        return entities.stream().map(v -> {
+            Variant vd = new Variant();
+            vd.setName(v.getName());
+            vd.setWeight(v.getWeight());
+            vd.setStickiness(v.getStickiness());
+            if (v.getPayloadType() != null) {
+                VariantPayload vp = new VariantPayload();
+                vp.setType(VariantPayload.TypeEnum.fromValue(v.getPayloadType()));
+                vp.setValue(v.getPayloadValue());
+                vd.setPayload(vp);
+            }
+            return vd;
+        }).collect(Collectors.toList());
+    }
+
+    private List<Variant> mapVariants(List<FeatureVariantEntity> entities) {
+        if (entities == null)
+            return null;
+        return entities.stream().map(v -> {
+            Variant vd = new Variant();
+            vd.setName(v.getName());
+            vd.setWeight(v.getWeight());
+            vd.setStickiness(v.getStickiness());
+            if (v.getPayloadType() != null) {
+                VariantPayload vp = new VariantPayload();
+                vp.setType(VariantPayload.TypeEnum.fromValue(v.getPayloadType()));
+                vp.setValue(v.getPayloadValue());
+                vd.setPayload(vp);
+            }
+            return vd;
+        }).collect(Collectors.toList());
     }
 }

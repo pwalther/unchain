@@ -67,4 +67,6 @@ public class FeatureStrategyEntity {
 
     @OneToMany(mappedBy = "featureStrategy", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FeatureStrategyParameterEntity> parameters = new ArrayList<>();
+    @OneToMany(mappedBy = "featureStrategy", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FeatureStrategyVariantEntity> variants = new ArrayList<>();
 }

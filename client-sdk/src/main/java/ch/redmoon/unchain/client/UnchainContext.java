@@ -14,4 +14,10 @@ public class UnchainContext {
     private final String environment;
     @Singular
     private final Map<String, String> properties;
+
+    public String getProperty(String name) {
+        if (properties == null)
+            return null;
+        return properties.get(name);
+    }
 }

@@ -42,9 +42,11 @@ import { getFeature, toggleFeature } from "@/features/features/actions"
 import { getEnvironments, updateEnvironment } from "@/features/environments/actions"
 import { getStrategies, createStrategyForFeature, deleteStrategyFromFeature, updateStrategyForFeature, getStrategyForFeature } from "@/features/strategies/actions"
 import { createChangeRequest, getChangeRequests, addChangesToRequest } from "@/features/change-requests/actions"
-import { Feature, Strategy, StrategyDefinition, Environment } from "@/types"
+import { Feature, Strategy, StrategyDefinition, Environment, Variant } from "@/types"
 import { StrategyDialog } from "@/features/features/components/strategy-dialog"
 import { EditEnvironmentDrawer } from "@/features/environments/components/edit-environment-drawer"
+import { FeatureVariantsDialog } from "@/features/features/components/feature-variants-dialog"
+import { getContextFields } from "@/features/context/actions"
 
 function FeatureDetailsContent() {
     const searchParams = useSearchParams()
@@ -67,6 +69,7 @@ function FeatureDetailsContent() {
     const [shimmerEnv, setShimmerEnv] = useState<string | null>(null)
     const [editDescriptionOpen, setEditDescriptionOpen] = useState(false)
     const [editDescriptionValue, setEditDescriptionValue] = useState("")
+    const [editVariantsOpen, setEditVariantsOpen] = useState(false)
 
     const { data: feature, isLoading: featureLoading } = useQuery({
         queryKey: ["feature", projectId, featureName],
@@ -94,6 +97,11 @@ function FeatureDetailsContent() {
         queryKey: ["strategy", projectId, featureName, editStrategy?.env, editStrategy?.strategy?.id],
         queryFn: () => (projectId && featureName && editStrategy) ? getStrategyForFeature(projectId, featureName, editStrategy.env, editStrategy.strategy.id!) : null,
         enabled: !!(projectId && featureName && editStrategy?.strategy?.id),
+    })
+
+    const { data: contextFields = [] } = useQuery({
+        queryKey: ["context-fields"],
+        queryFn: getContextFields,
     })
 
     useEffect(() => {
@@ -222,6 +230,19 @@ function FeatureDetailsContent() {
             setEditEnv(null)
         },
         onError: () => toast.error("Failed to update environment")
+    })
+
+    const updateVariantsMutation = useMutation({
+        mutationFn: (variants: Variant[]) => apiFetch(`/projects/${projectId}/features/${featureName}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ variants })
+        }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["feature", projectId, featureName] })
+            toast.success("Feature variants updated")
+            setEditVariantsOpen(false)
+        },
+        onError: () => toast.error("Failed to update variants")
     })
 
     const archiveMutation = useMutation({
@@ -514,6 +535,12 @@ function FeatureDetailsContent() {
                                                                                     </div>
                                                                                 </Badge>
                                                                             ))}
+                                                                            {strategy.variants?.map((v, i) => (
+                                                                                <Badge key={i} variant="outline" className="text-[10px] font-medium bg-purple-500/10 text-purple-700 border-purple-200 h-6 px-2 gap-1.5">
+                                                                                    <Package className="h-2.5 w-2.5" />
+                                                                                    {v.name} ({v.weight / 10}%)
+                                                                                </Badge>
+                                                                            ))}
                                                                         </div>
                                                                     </div>
                                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -559,6 +586,45 @@ function FeatureDetailsContent() {
                                     )
                                 })}
                             </Tabs>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="md:col-span-2">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <div>
+                            <CardTitle>Feature Variants</CardTitle>
+                            <CardDescription>
+                                Variants defined here apply to all environments unless overridden by strategy variants.
+                            </CardDescription>
+                        </div>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary transition-colors"
+                            onClick={() => setEditVariantsOpen(true)}
+                        >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Manage Variants
+                        </Button>
+                    </CardHeader>
+                    <CardContent>
+                        {(feature.variants?.length ?? 0) === 0 ? (
+                            <div className="py-6 text-center border border-dashed rounded-xl bg-muted/10">
+                                <p className="text-xs text-muted-foreground">No feature-level variants defined.</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-wrap gap-3">
+                                {feature.variants?.map((v, i) => (
+                                    <Badge key={i} variant="outline" className="py-2 px-3 gap-2 bg-purple-500/5 border-purple-200 text-purple-700">
+                                        <Package className="h-4 w-4" />
+                                        <div className="flex flex-col items-start gap-0.5">
+                                            <span className="font-bold text-xs">{v.name}</span>
+                                            <span className="text-[10px] opacity-70">{v.weight / 10}% weight</span>
+                                        </div>
+                                    </Badge>
+                                ))}
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -663,6 +729,16 @@ function FeatureDetailsContent() {
                     }
                 }}
             />
+
+            {feature && (
+                <FeatureVariantsDialog
+                    open={editVariantsOpen}
+                    onOpenChange={setEditVariantsOpen}
+                    feature={feature}
+                    contextFields={contextFields}
+                    onSave={(variants) => updateVariantsMutation.mutate(variants)}
+                />
+            )}
 
             {editEnv && (
                 <EditEnvironmentDrawer

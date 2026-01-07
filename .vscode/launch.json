@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "UnchainSampleApplication",
+            "request": "launch",
+            "projectName": "unchain-sample-app",
+            "mainClass": "ch.redmoon.unchain.sample.UnchainSampleApplication"
+        },
+        {
+            "type": "java",
             "name": "UnchainApplication-demo",
             "request": "launch",
             "mainClass": "ch.redmoon.unchain.UnchainApplication",

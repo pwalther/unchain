@@ -18,6 +18,7 @@
 	<modules>
 		<module>admin-api</module>
 		<module>client-sdk</module>
+		<module>sample-app</module>
 	</modules>
 
 	<dependencyManagement>

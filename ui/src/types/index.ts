@@ -15,6 +15,7 @@ export interface Feature {
     createdAt: string;
     impressionData: boolean;
     environments?: FeatureEnvironment[];
+    variants?: Variant[];
 }
 
 export interface FeatureEnvironment {
@@ -41,6 +42,7 @@ export interface Strategy {
     segments?: number[];
     sortOrder?: number;
     disabled?: boolean;
+    variants?: Variant[];
 }
 
 export interface StrategyParameter {
@@ -120,3 +122,14 @@ export interface LegalValue {
     description?: string;
 }
 
+export interface Variant {
+    name: string;
+    weight: number;
+    stickiness?: string;
+    payload?: VariantPayload;
+}
+
+export interface VariantPayload {
+    type: 'string' | 'json' | 'number';
+    value: string;
+}

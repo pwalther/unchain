@@ -53,3 +53,6 @@ databaseChangeLog:
         - include:
                   file: changes/v018-create-audit-log.yaml
                   relativeToChangelogFile: true
+        - include:
+                  file: changes/v019-add-variants.yaml
+                  relativeToChangelogFile: true

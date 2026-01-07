@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { StrategyDefinition, StrategyParameterDefinition, Strategy, Constraint, ContextField } from "@/types"
+import { StrategyDefinition, StrategyParameterDefinition, Strategy, Constraint, ContextField, Variant } from "@/types"
 import { useQuery } from "@tanstack/react-query"
 import { getContextFields } from "@/features/context/actions"
 import { Switch } from "@/components/ui/switch"
@@ -43,7 +43,7 @@ import { useFieldArray } from "react-hook-form"
 
 const formSchema = z.object({
     name: z.string().min(1, "Strategy name is required"),
-    parameters: z.record(z.string(), z.any()),
+    parameters: z.record(z.string(), z.union([z.string(), z.boolean(), z.array(z.string())])),
     constraints: z.array(z.object({
         contextName: z.string().min(1, "Context name is required"),
         operator: z.string().min(1, "Operator is required"),
@@ -51,17 +51,35 @@ const formSchema = z.object({
         caseInsensitive: z.boolean(),
         inverted: z.boolean(),
     })),
+    variants: z.array(z.object({
+        name: z.string().min(1, "Variant name is required"),
+        weight: z.number().min(0).max(1000),
+        stickiness: z.string().optional().nullable(),
+        payload: z.object({
+            type: z.string(),
+            value: z.string()
+        }).optional().nullable()
+    })),
 })
 
 type FormValues = {
     name: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, string | boolean | string[]>;
     constraints: {
         contextName: string;
         operator: string;
         values: string[];
         caseInsensitive: boolean;
         inverted: boolean;
+    }[];
+    variants: {
+        name: string;
+        weight: number;
+        stickiness?: string | null;
+        payload?: {
+            type: string;
+            value: string;
+        } | null;
     }[];
 }
 
@@ -91,7 +109,13 @@ export function StrategyDialog({
             name: "",
             parameters: {},
             constraints: [],
+            variants: [],
         },
+    })
+
+    const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+        control: form.control,
+        name: "variants",
     })
 
     const { fields: constraintFields, append: appendConstraint, remove: removeConstraint } = useFieldArray({
@@ -111,7 +135,7 @@ export function StrategyDialog({
                 setSelectedDef(def)
 
                 // Parse parameters back to form values based on definition types
-                const parameters: Record<string, any> = {}
+                const parameters: Record<string, string | boolean | string[]> = {}
                 def?.parameters.forEach(p => {
                     const strategyParam = strategy.parameters?.find(sp => sp.name === p.name)
                     const val = strategyParam?.value
@@ -127,14 +151,16 @@ export function StrategyDialog({
                 form.reset({
                     name: strategy.name,
                     parameters,
-                    constraints: strategy.constraints || []
+                    constraints: strategy.constraints || [],
+                    variants: strategy.variants || []
                 })
             } else {
                 setSelectedDef(null)
                 form.reset({
                     name: "",
                     parameters: {},
-                    constraints: []
+                    constraints: [],
+                    variants: []
                 })
             }
         }
@@ -156,7 +182,8 @@ export function StrategyDialog({
         onSave({
             name: values.name,
             parameters: parameters,
-            constraints: values.constraints,
+            constraints: values.constraints as Constraint[],
+            variants: values.variants as Variant[],
         })
         onOpenChange(false)
     }
@@ -167,7 +194,7 @@ export function StrategyDialog({
         form.setValue("name", name)
 
         // Initialize parameters map with defaults based on type
-        const initialParams: Record<string, any> = {}
+        const initialParams: Record<string, string | boolean | string[]> = {}
         def?.parameters.forEach(p => {
             if (p.type === 'boolean') initialParams[p.name] = false
             else if (p.type === 'list') initialParams[p.name] = []
@@ -176,9 +203,10 @@ export function StrategyDialog({
         })
         form.setValue("parameters", initialParams)
         form.setValue("constraints", [])
+        form.setValue("variants", [])
     }
 
-    const renderParameterInput = (param: StrategyParameterDefinition, field: any) => {
+    const renderParameterInput = (param: StrategyParameterDefinition, field: { value: any, onChange: (val: any) => void }) => {
         switch (param.type) {
             case 'boolean':
                 return (
@@ -596,6 +624,108 @@ export function StrategyDialog({
                                             <Filter className="h-4 w-4" />
                                             Add Constraint
                                         </Button>
+                                    </div>
+
+                                    <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap">Variants</span>
+                                            <div className="h-px w-full bg-border" />
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {variantFields.map((field, index) => (
+                                                <div key={field.id} className="p-5 rounded-2xl border border-muted-foreground/10 bg-muted/10 space-y-5 relative group transition-all hover:border-primary/20">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() => removeVariant(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`variants.${index}.name`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Variant Name</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input {...field} className="h-10 bg-background/50" placeholder="e.g. control" />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`variants.${index}.weight`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Weight (0-1000)</FormLabel>
+                                                                    <FormControl>
+                                                                        <Input
+                                                                            {...field}
+                                                                            type="number"
+                                                                            className="h-10 bg-background/50"
+                                                                            onChange={e => field.onChange(parseInt(e.target.value))}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`variants.${index}.stickiness`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Stickiness Override</FormLabel>
+                                                                    <Select
+                                                                        onValueChange={field.onChange}
+                                                                        defaultValue={field.value || ""}
+                                                                        value={field.value || ""}
+                                                                    >
+                                                                        <FormControl>
+                                                                            <SelectTrigger className="h-10 bg-background/50">
+                                                                                <SelectValue placeholder="Default (userId)" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="default">Default (userId)</SelectItem>
+                                                                            {contextFields.map(cf => (
+                                                                                <SelectItem key={cf.name} value={cf.name}>{cf.name}</SelectItem>
+                                                                            ))}
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full border-dashed border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all h-11 gap-2 rounded-xl text-primary font-medium"
+                                                onClick={() => appendVariant({
+                                                    name: "",
+                                                    weight: 0,
+                                                    stickiness: null,
+                                                    payload: null
+                                                })}
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                Add Variant
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             )}

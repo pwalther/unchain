@@ -5,6 +5,7 @@ The **Unchain Admin API** is the backend service for the Unchain feature flag ma
 ## Features
 
 - **Feature Flag Management**: Full lifecycle control over feature flags.
+- **Feature Variants**: Define multiple variations for a feature flag with weighted rollouts (A/B testing).
 - **Environment Support**: Manage flags across multiple environments (Development, Production, etc.).
 - **Strategy Engine**: Define and apply complex rollout strategies and constraints.
 - **Audit Logging**: Automatic tracking of all changes with detailed state snapshots.
@@ -153,6 +154,24 @@ All modifications to core entities (Features, Projects, Strategies, Change Reque
 - User who performed the action
 - Timestamp
 - JSON representation of the entity state
+
+## Feature Variants
+
+Unchain supports **Variants**, which allow you to define multiple versions of a feature flag. This is useful for:
+- **A/B Testing**: Testing different UI elements or backend algorithms.
+- **Gradual Rollouts**: Transitioning from one version to another.
+- **Personalization**: Serving different content based on user context.
+
+### Configuration
+Variants can be configured at two levels:
+1. **Feature Level**: Default variants that apply across all environments.
+2. **Strategy Level**: Overrides defined within a specific strategy assignment, allowing environment-specific variant definitions.
+
+### Selection Logic
+Each variant has a **Weight** (out of 1000). The client SDK uses these weights to deterministically assign a variant to a user based on **Stickiness**. By default, `userId` is used for stickiness, ensuring a consistent experience for the user.
+
+### Payloads
+Variants can include an optional **Payload** (String, JSON, or Number), allowing you to pass configuration data directly to your application logic.
 
 ## API Documentation
 
