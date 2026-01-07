@@ -69,8 +69,10 @@ public class EnvironmentsController implements EnvironmentsApi {
         entity.setEnabled(createEnvironmentSchema.getEnabled() != null ? createEnvironmentSchema.getEnabled() : true);
         entity.setSortOrder(createEnvironmentSchema.getSortOrder());
         entity.setRequiredApprovals(
-                createEnvironmentSchema.getRequiredApprovals() > 0 ? createEnvironmentSchema.getRequiredApprovals()
-                        : 0);
+                createEnvironmentSchema.getRequiredApprovals() != null
+                        && createEnvironmentSchema.getRequiredApprovals() > 0
+                                ? createEnvironmentSchema.getRequiredApprovals()
+                                : 0);
 
         EnvironmentEntity saved = environmentRepository.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToDto(saved));

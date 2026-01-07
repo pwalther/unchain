@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import ch.redmoon.unchain.repository.ProjectRepository;
-import ch.redmoon.unchain.repository.FeatureRepository;
+import ch.redmoon.unchain.repository.*;
 import ch.redmoon.unchain.entity.ProjectEntity;
 
 import static io.restassured.RestAssured.given;
@@ -25,10 +24,13 @@ class FeaturesControllerIntegrationTest {
         private ProjectRepository projectRepository;
         @Autowired
         private FeatureRepository featureRepository;
+        @Autowired
+        private FeatureStrategyRepository featureStrategyRepository;
 
         @BeforeEach
         void setUp() {
                 RestAssured.port = port;
+                featureStrategyRepository.deleteAll();
                 featureRepository.deleteAll(); // Delete features first due to FK
                 projectRepository.deleteAll();
 
@@ -78,7 +80,7 @@ class FeaturesControllerIntegrationTest {
                                 .contentType(ContentType.JSON)
                                 .body(updateJson)
                                 .when()
-                                .put("/projects/default/features/feature-A")
+                                .patch("/projects/default/features/feature-A")
                                 .then()
                                 .statusCode(200);
 

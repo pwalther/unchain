@@ -4,7 +4,8 @@ The **Unchain Admin API** is the backend service for the Unchain feature flag ma
 
 ## Features
 
-- **Feature Flag Management**: Full lifecycle control over feature flags.
+- **Feature Flag Management**: Full lifecycle control over feature flags, including manual and automated **Staleness Tracking**.
+- **Usage Metrics**: Track feature evaluations in real-time with configurable **Impression Data** collection.
 - **Feature Variants**: Define multiple variations for a feature flag with weighted rollouts (A/B testing).
 - **Environment Support**: Manage flags across multiple environments (Development, Production, etc.).
 - **Strategy Engine**: Define and apply complex rollout strategies and constraints.

@@ -1,5 +1,14 @@
 export const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "https://192.168.1.36:8888";
 
+export class ApiError extends Error {
+    status: number;
+    constructor(message: string, status: number) {
+        super(message);
+        this.status = status;
+        this.name = "ApiError";
+    }
+}
+
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const baseUrl = getApiUrl();
 
@@ -21,9 +30,7 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): 
             window.location.href = `${baseUrl}/oauth2/authorization/oidc`;
             return {} as T;
         }
-        const error = new Error(data.message || res.statusText || "API request failed") as any;
-        error.status = res.status;
-        throw error;
+        throw new ApiError(data.message || res.statusText || "API request failed", res.status);
     }
 
     if (res.status === 204 || !text) {

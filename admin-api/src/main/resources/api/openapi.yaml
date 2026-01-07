@@ -13,7 +13,7 @@ info:
   contact:
     name: Philipp Walther
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8080/
     description: Local Instance
 security:
   - OidcAuth: []
@@ -22,6 +22,7 @@ tags:
   - name: Projects
   - name: Features
   - name: Strategies
+  - name: Metrics
   - name: Context
   - name: Segments
   - name: Change Requests
@@ -180,7 +181,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Feature"
-    put:
+    patch:
       operationId: updateFeature
       summary: Update a feature toggle
       tags: [Features]
@@ -751,6 +752,39 @@ paths:
       responses:
         "200":
           description: Dependency removed
+
+  # =========================================================================
+  # METRICS
+  # =========================================================================
+  /metrics:
+    post:
+      operationId: reportMetrics
+      summary: Report feature flag usage metrics
+      tags: [Metrics]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetricsReportRequest"
+      responses:
+        "202":
+          description: Metrics received and will be processed
+
+  /projects/{projectId}/metrics:
+    get:
+      operationId: getProjectMetrics
+      summary: Get metrics for a project
+      tags: [Metrics]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: Project metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectMetrics"
 
   # =========================================================================
   # CHANGE REQUESTS
@@ -1705,7 +1739,7 @@ components:
             change request can be applied in this environment.
           type: integer
           example: 3
-          minimum: 1
+          minimum: 0
           nullable: true
       required:
         - name
@@ -1777,7 +1811,7 @@ components:
             change request can be applied in this environment.
           type: integer
           example: 3
-          minimum: 1
+          minimum: 0
           nullable: true
       additionalProperties: true
       required:
@@ -1973,3 +2007,78 @@ components:
           items:
             type: string
           description: List of specific variants the parent must resolve to
+
+    MetricsReportRequest:
+      type: object
+      required:
+        - metrics
+      properties:
+        metrics:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureMetric"
+
+    FeatureMetric:
+      type: object
+      required:
+        - projectId
+        - featureName
+        - environment
+        - count
+      properties:
+        projectId:
+          type: string
+        featureName:
+          type: string
+        environment:
+          type: string
+        count:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    ProjectMetrics:
+      type: object
+      properties:
+        featureActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/FeatureActivity"
+        clientVersions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientVersionUsage"
+        staleFeatures:
+          type: array
+          items:
+            $ref: "#/components/schemas/StaleFeature"
+
+    FeatureActivity:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+        lastUsage:
+          type: string
+          format: date-time
+
+    ClientVersionUsage:
+      type: object
+      properties:
+        version:
+          type: string
+        count:
+          type: integer
+
+    StaleFeature:
+      type: object
+      properties:
+        name:
+          type: string
+        lastUsage:
+          type: string
+          format: date-time
+          nullable: true

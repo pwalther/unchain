@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.time.OffsetDateTime;
 import java.util.stream.Collectors;
 
 public class UnchainClient {
@@ -27,8 +29,23 @@ public class UnchainClient {
     private final ObjectMapper objectMapper;
     private final Map<String, StrategyEvaluator> evaluators = new HashMap<>();
     private final Map<String, Feature> featureCache = new ConcurrentHashMap<>();
+    private final Map<String, AtomicInteger> metricsMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private static final Logger log = LoggerFactory.getLogger(UnchainClient.class);
+    private static final String VERSION = loadVersion();
+
+    private static String loadVersion() {
+        try (var is = UnchainClient.class.getResourceAsStream("/unchain-client.properties")) {
+            Properties props = new Properties();
+            if (is != null) {
+                props.load(is);
+                return props.getProperty("version", "unknown");
+            }
+        } catch (Exception e) {
+            log.warn("Could not load SDK version", e);
+        }
+        return "unknown";
+    }
 
     public UnchainClient(UnchainConfig config) {
         this(config, HttpClient.newBuilder().build());
@@ -57,6 +74,7 @@ public class UnchainClient {
         });
 
         this.scheduler.scheduleAtFixedRate(this::refresh, 0, config.getRefreshIntervalSeconds(), TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::sendMetrics, 10, 60, TimeUnit.SECONDS);
     }
 
     public UnchainConfig getConfig() {
@@ -72,10 +90,11 @@ public class UnchainClient {
             try {
                 String url = config.getApiUrl() + "/projects/" + projectId + "/features";
                 String token = config.getTokenSupplier() != null ? config.getTokenSupplier().get() : null;
-
+                log.debug("Fetching features for project: {} from {}", projectId, url);
                 HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                         .uri(URI.create(url))
                         .header("Accept", "application/json")
+                        .header("User-Agent", "unchain-java-client/" + VERSION)
                         .GET();
 
                 if (token != null) {
@@ -92,8 +111,10 @@ public class UnchainClient {
                             for (Feature f : fr.getFeatures()) {
                                 featureCache.put(projectId + ":" + f.getName(), f);
                             }
+                            log.info("Refreshed {} features for project: {}", fr.getFeatures().size(), projectId);
+                        } else {
+                            log.debug("No features found for project: {}", projectId);
                         }
-                        log.debug("Refreshed features for project: {}", projectId);
                     } catch (Exception e) {
                         log.error("Failed to deserialize feature response for project {}. Body: {}", projectId,
                                 response.body(), e);
@@ -115,14 +136,22 @@ public class UnchainClient {
     public boolean isEnabled(String projectId, String featureName, String environment, UnchainContext context) {
         Feature feature = featureCache.get(projectId + ":" + featureName);
         if (feature == null) {
+            log.trace("Feature not found in cache: {}:{}", projectId, featureName);
             return false;
         }
+
+        if (feature.isImpressionData()) {
+            recordMetric(projectId, featureName, environment);
+        }
+
+        log.trace("Evaluating feature: {}:{}:{} for context: {}", projectId, featureName, environment, context);
 
         Optional<FeatureEnvironment> envOpt = feature.getEnvironments().stream()
                 .filter(e -> e.getName().equals(environment))
                 .findFirst();
 
         if (envOpt.isEmpty() || !envOpt.get().isEnabled()) {
+            log.trace("Feature {}:{} is disabled in environment: {}", projectId, featureName, environment);
             return false;
         }
 
@@ -134,50 +163,18 @@ public class UnchainClient {
 
         for (Strategy strategy : env.getStrategies()) {
             StrategyEvaluator evaluator = evaluators.get(strategy.getName());
-            if (evaluator != null && evaluator.isEnabled(getParametersMap(strategy), context)) {
-                return true;
+            if (evaluator != null) {
+                boolean enabled = evaluator.isEnabled(getParametersMap(strategy), context);
+                log.trace("Strategy {} evaluated to: {}", strategy.getName(), enabled);
+                if (enabled) {
+                    return true;
+                }
+            } else {
+                log.warn("No evaluator found for strategy: {}", strategy.getName());
             }
         }
 
         return false;
-    }
-
-    public Map<String, Boolean> getAllFeaturesEnabled(UnchainContext context) {
-        String projectId = config.getProjects().get(0);
-        return getAllFeaturesEnabled(projectId, config.getEnvironment(), context);
-    }
-
-    public Map<String, Boolean> getAllFeaturesEnabled(String projectId, String environment, UnchainContext context) {
-        String prefix = projectId + ":";
-        return featureCache.entrySet().stream()
-                .filter(e -> e.getKey().startsWith(prefix))
-                .collect(Collectors.toMap(
-                        e -> e.getKey().substring(prefix.length()),
-                        e -> isEnabled(projectId, e.getKey().substring(prefix.length()), environment, context)));
-    }
-
-    public Set<String> getFeatureNames() {
-        return getFeatureNames(config.getProjects().get(0));
-    }
-
-    public Set<String> getFeatureNames(String projectId) {
-        String prefix = projectId + ":";
-        return featureCache.keySet().stream()
-                .filter(k -> k.startsWith(prefix))
-                .map(k -> k.substring(prefix.length()))
-                .collect(Collectors.toUnmodifiableSet());
-    }
-
-    public boolean isFeaturePresent(String projectId, String featureName) {
-        return featureCache.containsKey(projectId + ":" + featureName);
-    }
-
-    public Feature getFeature(String featureName) {
-        return getFeature(config.getProjects().get(0), featureName);
-    }
-
-    public Feature getFeature(String projectId, String featureName) {
-        return featureCache.get(projectId + ":" + featureName);
     }
 
     // For testing purposes
@@ -211,6 +208,14 @@ public class UnchainClient {
         Feature feature = featureCache.get(projectId + ":" + featureName);
         if (feature == null) {
             return null;
+        }
+
+        // We don't record metric here if it was already recorded in isEnabled,
+        // but since we don't know if isEnabled was called, we should ideally
+        // have an atomic way. For now, we keep it as is but ensure it's recorded
+        // only if feature exists.
+        if (feature.isImpressionData()) {
+            recordMetric(projectId, featureName, environment);
         }
 
         Optional<FeatureEnvironment> envOpt = feature.getEnvironments().stream()
@@ -251,8 +256,10 @@ public class UnchainClient {
 
         // Basic weighted selection logic
         int totalWeight = variants.stream().mapToInt(Variant::getWeight).sum();
-        if (totalWeight == 0)
+        if (totalWeight == 0) {
+            log.warn("Total variant weight is 0 for feature: {}", featureName);
             return null;
+        }
 
         // Stickiness logic (simplified)
         String stickyValue = context.getUserId(); // Default stickiness
@@ -268,10 +275,12 @@ public class UnchainClient {
             stickyValue = "anonymous";
 
         int hash = Math.abs((featureName + ":" + stickyValue).hashCode()) % totalWeight;
+        log.trace("Variant selection for {}: hash={}, stickyValue={}", featureName, hash, stickyValue);
         int currentWeight = 0;
         for (Variant variant : variants) {
             currentWeight += variant.getWeight();
             if (hash < currentWeight) {
+                log.trace("Selected variant: {} for feature: {}", variant.getName(), featureName);
                 return variant;
             }
         }
@@ -289,5 +298,74 @@ public class UnchainClient {
                         p -> p.getValue() != null ? p.getValue() : "",
                         (v1, v2) -> v1 // Keep first on duplicates
                 ));
+    }
+
+    private void recordMetric(String projectId, String featureName, String environment) {
+        log.trace("Recording metric for feature: {}:{}:{}", projectId, featureName, environment);
+        String key = String.format("%s|%s|%s", projectId, featureName, environment);
+        metricsMap.computeIfAbsent(key, k -> new AtomicInteger(0)).incrementAndGet();
+    }
+
+    private void sendMetrics() {
+        if (metricsMap.isEmpty()) {
+            log.trace("No metrics to send");
+            return;
+        }
+
+        try {
+            List<FeatureMetric> metricsList = new ArrayList<>();
+            metricsMap.forEach((key, counter) -> {
+                int count = counter.getAndSet(0);
+                if (count > 0) {
+                    String[] parts = key.split("\\|");
+                    if (parts.length == 3) {
+                        metricsList.add(FeatureMetric.builder()
+                                .projectId(parts[0])
+                                .featureName(parts[1])
+                                .environment(parts[2])
+                                .count(count)
+                                .timestamp(OffsetDateTime.now())
+                                .build());
+                    }
+                }
+            });
+
+            if (metricsList.isEmpty()) {
+                return;
+            }
+
+            MetricsReportRequest reportRequest = MetricsReportRequest.builder()
+                    .metrics(metricsList)
+                    .build();
+
+            String url = config.getApiUrl() + "/metrics";
+            String token = config.getTokenSupplier() != null ? config.getTokenSupplier().get() : null;
+
+            log.debug("Reporting {} metric buckets to {}", metricsList.size(), url);
+
+            HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("Accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "unchain-java-client/" + VERSION)
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(reportRequest)));
+
+            if (token != null) {
+                requestBuilder.header("Authorization", "Bearer " + token);
+            }
+
+            HttpRequest request = requestBuilder.build();
+            HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+            if (response.statusCode() == 202) {
+                log.info("Successfully reported {} metric buckets", metricsList.size());
+            } else {
+                log.error("Failed to report metrics: Status code {}", response.statusCode());
+                // Optional: restore metrics on failure? Complex due to concurrent updates.
+                // For now, we accept loss on failure as the counts were already reset to 0.
+            }
+        } catch (Exception e) {
+            log.error("Error sending metrics", e);
+        }
     }
 }

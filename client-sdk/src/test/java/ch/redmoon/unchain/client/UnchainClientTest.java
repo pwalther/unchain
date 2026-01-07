@@ -7,9 +7,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,7 +19,7 @@ public class UnchainClientTest {
     @BeforeEach
     public void setup() {
         UnchainConfig config = UnchainConfig.builder()
-                .apiUrl("http://localhost:8080/api/admin")
+                .apiUrl("http://localhost:8080")
                 .tokenSupplier(() -> "test-token")
                 .environment(ENV)
                 .projects(List.of("default"))
@@ -83,22 +81,6 @@ public class UnchainClientTest {
     }
 
     @Test
-    public void shouldReturnBooleanMap() {
-        Feature f1 = createFeature("f1", true, "default");
-        Feature f2 = createFeature("f2", false, "default");
-
-        client.addFeature(f1);
-        client.addFeature(f2);
-
-        UnchainContext context = UnchainContext.builder().userId("user1").build();
-        Map<String, Boolean> map = client.getAllFeaturesEnabled(context);
-
-        assertEquals(2, map.size());
-        assertTrue(map.get("f1"));
-        assertFalse(map.get("f2"));
-    }
-
-    @Test
     public void shouldReturnVariant() {
         Feature f = new Feature();
         f.setName("variant-feature");
@@ -125,18 +107,5 @@ public class UnchainClientTest {
 
         assertNotNull(selected);
         assertEquals("control", selected.getName());
-    }
-
-    private Feature createFeature(String name, boolean enabled, String strategyName) {
-        Feature f = new Feature();
-        f.setName(name);
-        FeatureEnvironment fe = new FeatureEnvironment();
-        fe.setName(ENV);
-        fe.setEnabled(enabled);
-        Strategy s = new Strategy();
-        s.setName(strategyName);
-        fe.setStrategies(List.of(s));
-        f.setEnvironments(List.of(fe));
-        return f;
     }
 }

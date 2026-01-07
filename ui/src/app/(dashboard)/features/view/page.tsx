@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ArrowLeft, Plus, Power, Settings, Trash, Info, Check, Cloud, Package, User, Terminal, Shield, Filter, Activity, Clock, ChevronRight, AlertTriangle, XCircle, Pencil } from "lucide-react"
 import { toast } from "sonner"
-import { apiFetch } from "@/lib/api"
+import { apiFetch, ApiError } from "@/lib/api"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
@@ -61,7 +61,7 @@ function FeatureDetailsContent() {
     const [editStrategy, setEditStrategy] = useState<{ env: string, strategy: Strategy } | null>(null)
     const [editEnv, setEditEnv] = useState<Environment | null>(null)
     const [pendingProductionEnable, setPendingProductionEnable] = useState<string | null>(null)
-    const [crData, setCrData] = useState<{ env: string, changes: { feature: string, action: string, payload: any }[] } | null>(null)
+    const [crData, setCrData] = useState<{ env: string, changes: { feature: string, action: string, payload: unknown }[] } | null>(null)
     const [crTitle, setCrTitle] = useState("")
     const [crScheduledAt, setCrScheduledAt] = useState("")
     const [existingDraftId, setExistingDraftId] = useState<number | null>(null)
@@ -111,7 +111,7 @@ function FeatureDetailsContent() {
     }, [allEnvironments, activeTab])
 
     const updateFeatureMutation = useMutation({
-        mutationFn: (data: { description: string }) => apiFetch(`/projects/${projectId}/features/${featureName}`, {
+        mutationFn: (data: Partial<Feature>) => apiFetch(`/projects/${projectId}/features/${featureName}`, {
             method: 'PATCH',
             body: JSON.stringify(data)
         }),
@@ -160,7 +160,7 @@ function FeatureDetailsContent() {
     })
 
     const crMutation = useMutation({
-        mutationFn: (data: { title?: string; environment: string; changes: { feature: string; action: string; payload: any }[]; scheduledAt?: string; id?: number }) => {
+        mutationFn: (data: { title?: string; environment: string; changes: { feature: string; action: string; payload: unknown }[]; scheduledAt?: string; id?: number }) => {
             if (data.id) {
                 return addChangesToRequest(projectId!, data.id, { changes: data.changes })
             }
@@ -290,7 +290,7 @@ function FeatureDetailsContent() {
                 router.push("/features")
             }
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             toast.error(error.message || "Failed to archive feature")
         }
     })
@@ -348,8 +348,21 @@ function FeatureDetailsContent() {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-semibold tracking-tight">{feature.name}</h1>
-                            <Badge variant={feature.stale ? "outline" : "secondary"}>
-                                {feature.stale ? "Stale" : "Active"}
+                            <Badge
+                                variant={feature.stale ? "outline" : "secondary"}
+                                className={feature.stale ? "bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1" : "gap-1"}
+                            >
+                                {feature.stale ? (
+                                    <>
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Stale
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                                        Active
+                                    </>
+                                )}
                             </Badge>
                         </div>
                         <div className="flex items-center gap-2 group">
@@ -442,7 +455,7 @@ function FeatureDetailsContent() {
                                                     checked={featureEnv?.enabled ?? false}
                                                     onCheckedChange={(checked) => {
                                                         if (env.protected) {
-                                                            const changes: { feature: string; action: string; payload: any }[] = [{
+                                                            const changes: { feature: string; action: string; payload: unknown }[] = [{
                                                                 feature: featureName!,
                                                                 action: checked ? 'enable' : 'disable',
                                                                 payload: { enabled: checked }
@@ -673,7 +686,28 @@ function FeatureDetailsContent() {
                         <CardContent>
                             <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
                                 <span className="text-sm font-semibold">{feature.impressionData ? "Active" : "Inactive"}</span>
-                                <Switch checked={feature.impressionData} disabled />
+                                <Switch
+                                    checked={feature.impressionData}
+                                    onCheckedChange={(checked) => updateFeatureMutation.mutate({ impressionData: checked })}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg">Status</CardTitle>
+                            <CardDescription className="text-xs text-balance">
+                                Mark this feature as stale when it is no longer needed and should be removed.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/30">
+                                <span className="text-sm font-semibold">{feature.stale ? "Stale" : "Active"}</span>
+                                <Switch
+                                    checked={feature.stale}
+                                    onCheckedChange={(checked) => updateFeatureMutation.mutate({ stale: checked })}
+                                />
                             </div>
                         </CardContent>
                     </Card>
@@ -869,7 +903,7 @@ function FeatureDetailsContent() {
                                 <p key={i}>
                                     {c.action === 'enable' ? 'Enable' : c.action === 'disable' ? 'Disable' : c.action}
                                     {c.feature === featureName ? '' : ` feature ${c.feature}`}
-                                    {c.action === 'add-strategy' ? ` strategy ${c.payload.name}` : ''}
+                                    {c.action === 'add-strategy' ? ` strategy ${(c.payload as { name: string }).name}` : ''}
                                     {c.action === 'delete-strategy' ? ` strategy` : ''}
                                 </p>
                             ))}

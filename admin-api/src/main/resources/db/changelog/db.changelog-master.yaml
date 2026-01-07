@@ -56,3 +56,6 @@ databaseChangeLog:
         - include:
                   file: changes/v019-add-variants.yaml
                   relativeToChangelogFile: true
+        - include:
+                  file: changes/020-create-metrics-table.yaml
+                  relativeToChangelogFile: true

@@ -111,7 +111,7 @@ class VariantsIntegrationTest {
                 .contentType(ContentType.JSON)
                 .body(updateJson)
                 .when()
-                .put("/projects/default/features/variant-feature")
+                .patch("/projects/default/features/variant-feature")
                 .then()
                 .statusCode(200);
 

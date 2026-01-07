@@ -30,7 +30,7 @@ The SDK defines `ch.redmoon.unchain.client.exception.UnchainException` for criti
 
 ```java
 UnchainConfig config = UnchainConfig.builder()
-    .apiUrl("http://your-unchain-instance.com/api/admin")
+    .apiUrl("http://your-unchain-instance.com/<path-to-admin-api>")
     .tokenSupplier(() -> "your-api-token")
     .environment("production")
     .projects(List.of("default"))

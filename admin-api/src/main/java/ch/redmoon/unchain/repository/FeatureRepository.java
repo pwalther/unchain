@@ -18,6 +18,8 @@ package ch.redmoon.unchain.repository;
 
 import ch.redmoon.unchain.entity.FeatureEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,6 +28,8 @@ import java.util.List;
 public interface FeatureRepository extends JpaRepository<FeatureEntity, String> {
     List<FeatureEntity> findByProjectId(String projectId);
 
-    @org.springframework.data.jpa.repository.Query("SELECT count(f) > 0 FROM FeatureEntity f WHERE LOWER(f.name) = LOWER(:name)")
-    boolean existsByNameIgnoreCase(@org.springframework.data.repository.query.Param("name") String name);
+    @Query("SELECT count(f) > 0 FROM FeatureEntity f WHERE LOWER(f.name) = LOWER(:name)")
+    boolean existsByNameIgnoreCase(@Param("name") String name);
+
+    List<FeatureEntity> findByProjectIdAndStale(String projectId, boolean stale);
 }

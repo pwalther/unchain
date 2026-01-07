@@ -14,6 +14,7 @@ import {
     SheetTitle,
     SheetFooter
 } from "@/components/ui/sheet"
+import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import {
     Form,
@@ -39,7 +40,9 @@ const featureSchema = z.object({
     name: z.string().min(1, "Name is required").regex(/^[a-zA-Z0-9-]+$/, "Name must be URL-friendly"),
     type: z.string().min(1, "Type is required"),
     projectId: z.string().min(1, "Project is required"),
-    description: z.string().optional(),
+    description: z.string(),
+    impressionData: z.boolean(),
+    stale: z.boolean(),
 })
 
 type FeatureFormValues = z.infer<typeof featureSchema>
@@ -60,6 +63,8 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
             type: "release",
             projectId: projectId || "default",
             description: "",
+            impressionData: false,
+            stale: false,
         },
     })
 
@@ -79,12 +84,15 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
             queryClient.invalidateQueries({ queryKey: ["environments"] })
             onOpenChange(false)
             form.reset({
-                ...form.getValues(),
                 name: "",
-                description: ""
+                type: "release",
+                projectId: variables.projectId,
+                description: "",
+                impressionData: false,
+                stale: false,
             })
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
             toast.error(error.message || "Failed to create feature")
         }
     })
@@ -123,7 +131,7 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Project</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select project" />
@@ -145,7 +153,7 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Type</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select type" />
@@ -176,6 +184,46 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
                                 </FormItem>
                             )}
                         />
+                        <FormField
+                            control={form.control}
+                            name="impressionData"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Impression Data</FormLabel>
+                                        <div className="text-sm text-muted-foreground text-balance">
+                                            When enabled, SDKs will emit events when this feature is evaluated.
+                                        </div>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="stale"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Mark as Stale</FormLabel>
+                                        <div className="text-sm text-muted-foreground text-balance">
+                                            If enabled, this feature will be marked as stale from the start.
+                                        </div>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={field.onChange}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
                         <SheetFooter>
                             <Button type="submit" disabled={mutation.isPending}>
                                 {mutation.isPending ? "Creating..." : "Create Toggle"}
@@ -187,5 +235,3 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
         </Sheet>
     )
 }
-
-

@@ -128,8 +128,12 @@ public class FeaturesController implements FeaturesApi {
     @Override
     public ResponseEntity<Void> updateFeature(String projectId, String featureName,
             UpdateFeatureRequest updateFeatureRequest) {
+        log.info("Updating feature {} in project {} with request: {}", featureName, projectId, updateFeatureRequest);
         return featureRepository.findById(featureName)
-                .filter(f -> f.getProject().getId().equals(projectId))
+                .filter(f -> {
+                    log.info("Found feature {}, project ID in entity: {}", f.getName(), f.getProject().getId());
+                    return f.getProject().getId().equals(projectId);
+                })
                 .map(f -> {
                     if (updateFeatureRequest.getDescription() != null)
                         f.setDescription(updateFeatureRequest.getDescription());

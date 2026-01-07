@@ -1,0 +1,45 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-create-metrics-table
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: feature_metrics
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: project_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: feature_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: environment
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sdk_version
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: call_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reported_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false

@@ -16,6 +16,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@org.springframework.context.annotation.Import(TestSecurityConfig.class)
 class AdditionalControllersIntegrationTest {
 
         @LocalServerPort
@@ -37,6 +38,8 @@ class AdditionalControllersIntegrationTest {
         private EnvironmentRepository environmentRepository;
         @Autowired
         private FeatureStrategyRepository featureStrategyRepository;
+        @Autowired
+        private TagTypeRepository tagTypeRepository;
 
         @BeforeEach
         void setUp() {
@@ -51,6 +54,11 @@ class AdditionalControllersIntegrationTest {
                 environmentRepository.deleteAll();
                 strategyDefinitionRepository.deleteAll();
 
+                // Create tag types that tests can reference
+                TagTypeEntity simpleType = new TagTypeEntity();
+                simpleType.setName("simple");
+                simpleType.setDescription("Simple tag type");
+                tagTypeRepository.save(simpleType);
         }
 
         @Test
@@ -59,6 +67,7 @@ class AdditionalControllersIntegrationTest {
 
                 // Create
                 given()
+                                .auth().oauth2("anything")
                                 .contentType(ContentType.JSON)
                                 .body(tagJson)
                                 .when()
@@ -68,6 +77,7 @@ class AdditionalControllersIntegrationTest {
 
                 // List
                 given()
+                                .auth().oauth2("anything")
                                 .when()
                                 .get("/tags")
                                 .then()
@@ -81,6 +91,7 @@ class AdditionalControllersIntegrationTest {
 
                 // Create
                 given()
+                                .auth().oauth2("anything")
                                 .contentType(ContentType.JSON)
                                 .body(contextJson)
                                 .when()
@@ -90,6 +101,7 @@ class AdditionalControllersIntegrationTest {
 
                 // List - returns array directly
                 given()
+                                .auth().oauth2("anything")
                                 .when()
                                 .get("/context")
                                 .then()
@@ -98,6 +110,7 @@ class AdditionalControllersIntegrationTest {
 
                 // Delete
                 given()
+                                .auth().oauth2("anything")
                                 .when()
                                 .delete("/context/userId")
                                 .then()
@@ -119,6 +132,7 @@ class AdditionalControllersIntegrationTest {
 
                 // Create
                 given()
+                                .auth().oauth2("anything")
                                 .contentType(ContentType.JSON)
                                 .body(segmentJson)
                                 .when()
@@ -128,6 +142,7 @@ class AdditionalControllersIntegrationTest {
 
                 // List
                 given()
+                                .auth().oauth2("anything")
                                 .when()
                                 .get("/segments")
                                 .then()
@@ -141,6 +156,7 @@ class AdditionalControllersIntegrationTest {
 
                 // Create Definition
                 given()
+                                .auth().oauth2("anything")
                                 .contentType(ContentType.JSON)
                                 .body(strategyJson)
                                 .when()
@@ -150,6 +166,7 @@ class AdditionalControllersIntegrationTest {
 
                 // List
                 given()
+                                .auth().oauth2("anything")
                                 .when()
                                 .get("/strategies")
                                 .then()
@@ -197,6 +214,7 @@ class AdditionalControllersIntegrationTest {
                                 """;
 
                 given()
+                                .auth().oauth2("anything")
                                 .contentType(ContentType.JSON)
                                 .body(createStrategyJson)
                                 .when()

@@ -28,4 +28,7 @@ public class Feature {
     @JsonProperty("variants")
     @Builder.Default
     private List<Variant> variants = new ArrayList<>();
+
+    @JsonProperty("impressionData")
+    private boolean impressionData;
 }

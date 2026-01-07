@@ -106,7 +106,7 @@ export interface ChangeRequestFeature {
 
 export interface ChangeRequestChange {
     action: string;
-    payload: any;
+    payload: unknown;
 }
 
 export interface ContextField {
@@ -133,3 +133,26 @@ export interface VariantPayload {
     type: 'string' | 'json' | 'number';
     value: string;
 }
+
+export interface ProjectMetrics {
+    featureActivity: FeatureActivity[];
+    clientVersions: ClientVersionUsage[];
+    staleFeatures: StaleFeature[];
+}
+
+export interface FeatureActivity {
+    name: string;
+    count: number;
+    lastUsage: string;
+}
+
+export interface ClientVersionUsage {
+    version: string;
+    count: number;
+}
+
+export interface StaleFeature {
+    name: string;
+    lastUsage: string | null;
+}
+

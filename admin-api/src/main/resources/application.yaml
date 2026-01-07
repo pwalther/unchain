@@ -62,6 +62,9 @@ unchain:
     retention-period-months: 1
     audit-log-retention-years: 1
     audit-log-cron: "0 0 2 * * *"
+  features:
+    stale-after-days: 3
+    stale-check-cron: "0 0 3 * * *"
   security:
     authorization-provider-class: ch.redmoon.unchain.security.TrustAllAuthorizationProvider
     oauth2:

@@ -13,7 +13,8 @@ import {
     Settings,
     ChevronLeft,
     ChevronRight,
-    Command
+    Command,
+    BarChart3
 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -24,6 +25,7 @@ import { getApiUrl } from "@/lib/api"
 
 const navItems = [
     { name: "Features", href: "/features", icon: LayoutGrid },
+    { name: "Metrics", href: "/metrics", icon: BarChart3 },
     { name: "Change Requests", href: "/change-requests", icon: ClipboardList },
     { name: "Projects", href: "/projects", icon: Folder },
     { name: "Strategies", href: "/strategies", icon: Zap },

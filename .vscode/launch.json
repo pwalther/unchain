@@ -4,7 +4,7 @@
             "type": "java",
             "name": "UnchainSampleApplication",
             "request": "launch",
-            "projectName": "unchain-sample-app",
+            "projectName": "sample-app",
             "mainClass": "ch.redmoon.unchain.sample.UnchainSampleApplication"
         },
         {

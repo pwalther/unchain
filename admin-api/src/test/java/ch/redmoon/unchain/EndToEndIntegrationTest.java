@@ -13,6 +13,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@org.springframework.context.annotation.Import(TestSecurityConfig.class)
 class EndToEndIntegrationTest {
 
     @LocalServerPort
@@ -45,6 +46,7 @@ class EndToEndIntegrationTest {
         // 1. Create a project
         String projectJson = "{ \"id\": \"default\", \"name\": \"Default Project\", \"description\": \"Main project\" }";
         given()
+                .auth().oauth2("anything")
                 .contentType(ContentType.JSON)
                 .body(projectJson)
                 .when()
@@ -55,6 +57,7 @@ class EndToEndIntegrationTest {
         // 2. Add a feature to the previously created project
         String featureJson = "{ \"name\": \"new-feature\", \"type\": \"release\", \"description\": \"A new feature\" }";
         given()
+                .auth().oauth2("anything")
                 .contentType(ContentType.JSON)
                 .body(featureJson)
                 .when()
@@ -68,11 +71,11 @@ class EndToEndIntegrationTest {
                     "name": "production",
                     "type": "production",
                     "enabled": true,
-                    "protected": false,
                     "sortOrder": 1
                 }
                 """;
         given()
+                .auth().oauth2("anything")
                 .contentType(ContentType.JSON)
                 .body(envJson)
                 .when()
@@ -80,14 +83,7 @@ class EndToEndIntegrationTest {
                 .then()
                 .statusCode(201);
 
-        // 4. Add an environment to the previously created feature (Enable it)
-        given()
-                .when()
-                .post("/projects/default/features/new-feature/environments/production/on")
-                .then()
-                .statusCode(200);
-
-        // 5. Create a strategy
+        // 4. Create a strategy
         String strategyJson = """
                 {
                     "name": "default",
@@ -96,6 +92,7 @@ class EndToEndIntegrationTest {
                 }
                 """;
         given()
+                .auth().oauth2("anything")
                 .contentType(ContentType.JSON)
                 .body(strategyJson)
                 .when()
@@ -103,16 +100,25 @@ class EndToEndIntegrationTest {
                 .then()
                 .statusCode(201);
 
+        // 5. Add an environment to the previously created feature (Enable it)
+        given()
+                .auth().oauth2("anything")
+                .when()
+                .post("/projects/default/features/new-feature/environments/production/on")
+                .then()
+                .statusCode(200);
+
         // 6. Add the previously created strategy to the feature for the created
         // environment
         String addStrategyJson = """
                 {
                     "name": "default",
                     "constraints": [],
-                    "parameters": []
+                    "parameters": {}
                 }
                 """;
         given()
+                .auth().oauth2("anything")
                 .contentType(ContentType.JSON)
                 .body(addStrategyJson)
                 .when()

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus, Trash } from "lucide-react"
+import { Plus, Trash, AlertTriangle } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 
@@ -176,11 +176,27 @@ export default function FeaturesPage() {
         {
             accessorKey: "stale",
             header: "Status",
-            cell: ({ row }) => (
-                <Badge variant={row.getValue("stale") ? "outline" : "secondary"}>
-                    {row.getValue("stale") ? "Stale" : "Active"}
-                </Badge>
-            ),
+            cell: ({ row }) => {
+                const isStale = !!row.getValue("stale")
+                return (
+                    <Badge
+                        variant={isStale ? "outline" : "secondary"}
+                        className={isStale ? "bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1" : "gap-1"}
+                    >
+                        {isStale ? (
+                            <>
+                                <AlertTriangle className="h-3 w-3" />
+                                Stale
+                            </>
+                        ) : (
+                            <>
+                                <div className="h-1.5 w-1.5 rounded-full bg-current" />
+                                Active
+                            </>
+                        )}
+                    </Badge>
+                )
+            },
         },
         {
             accessorKey: "createdAt",

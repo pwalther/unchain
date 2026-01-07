@@ -13,7 +13,7 @@ export async function getFeature(projectId: string, featureName: string) {
 }
 
 
-export async function createFeature(projectId: string, data: { name: string; type: string; description?: string }) {
+export async function createFeature(projectId: string, data: { name: string; type: string; description?: string; impressionData?: boolean; stale?: boolean }) {
     await apiFetch(`/projects/${projectId}/features`, {
         method: "POST",
         body: JSON.stringify(data),
