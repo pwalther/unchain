@@ -29,8 +29,10 @@ public interface AuthorizationProvider {
      *
      * @param authentication      the current authentication object
      * @param requiredPermissions the list of permissions required for the operation
-     *                            (from OpenAPI spec)
+     * @param resourceAttributes  additional context about the resource being
+     *                            accessed (e.g. projectId)
      * @return true if authorized, false otherwise
      */
-    boolean isAuthorized(Authentication authentication, List<String> requiredPermissions);
+    boolean isAuthorized(Authentication authentication, List<String> requiredPermissions,
+            java.util.Map<String, String> resourceAttributes);
 }

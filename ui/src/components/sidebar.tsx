@@ -24,7 +24,8 @@ import { LogIn, LogOut } from "lucide-react"
 import { getApiUrl } from "@/lib/api"
 
 const navItems = [
-    { name: "Features", href: "/features", icon: LayoutGrid },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutGrid },
+    { name: "Features", href: "/features", icon: ClipboardList },
     { name: "Metrics", href: "/metrics", icon: BarChart3 },
     { name: "Change Requests", href: "/change-requests", icon: ClipboardList },
     { name: "Projects", href: "/projects", icon: Folder },
@@ -59,6 +60,8 @@ export function Sidebar() {
             <nav className="flex-1 space-y-1 p-3">
                 {navItems.map((item) => {
                     const isActive = pathname.startsWith(item.href)
+                    const isExtraSpace = item.name === "Features"
+
                     return (
                         <Link
                             key={item.name}
@@ -67,7 +70,8 @@ export function Sidebar() {
                                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all group",
                                 isActive
                                     ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                                isExtraSpace ? "mt-4" : ""
                             )}
                         >
                             <item.icon className={cn(

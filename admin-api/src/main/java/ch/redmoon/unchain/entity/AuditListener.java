@@ -73,8 +73,20 @@ public class AuditListener {
                 if (entity instanceof FeatureEntity f) {
                     summary.put("description", f.getDescription());
                     summary.put("type", f.getType());
+                    summary.put("featureName", f.getName());
+                    try {
+                        if (f.getProject() != null) {
+                            summary.put("project", f.getProject().getId());
+                        }
+                    } catch (Exception e) {
+                        // Ignore if project cannot be accessed
+                    }
                 } else if (entity instanceof ProjectEntity p) {
                     summary.put("name", p.getName());
+                } else if (entity instanceof FeatureStrategyEntity fs) {
+                    summary.put("featureName", fs.getFeatureName());
+                    summary.put("strategyName", fs.getStrategyName());
+                    summary.put("environmentName", fs.getEnvironmentName());
                 }
                 data = objectMapper.writeValueAsString(summary);
             } catch (Throwable e) {

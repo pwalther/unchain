@@ -119,16 +119,7 @@ class AdditionalControllersIntegrationTest {
 
         @Test
         void testSegments() {
-                String segmentJson = "{ \"name\": \"beta-users\", \"description\": \"Beta\", \"constraints\": [] }"; // added
-                                                                                                                     // constraints
-                                                                                                                     // empty
-                                                                                                                     // array
-                                                                                                                     // as
-                                                                                                                     // required
-                                                                                                                     // by
-                                                                                                                     // updated
-                                                                                                                     // request
-                                                                                                                     // maybe?
+                String segmentJson = "{ \"name\": \"beta-users\", \"description\": \"Beta\", \"constraints\": [] }";
 
                 // Create
                 given()

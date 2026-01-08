@@ -82,6 +82,7 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
             toast.success("Feature created successfully")
             queryClient.invalidateQueries({ queryKey: ["features", variables.projectId] })
             queryClient.invalidateQueries({ queryKey: ["environments"] })
+            queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
             onOpenChange(false)
             form.reset({
                 name: "",

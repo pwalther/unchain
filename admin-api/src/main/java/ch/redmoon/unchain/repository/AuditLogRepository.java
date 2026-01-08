@@ -23,4 +23,9 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLogEntity, Long> {
     long deleteByChangedAtBefore(java.time.OffsetDateTime threshold);
+
+    java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findTop10ByEntityTypeOrderByChangedAtDesc(
+            String entityType);
+
+    java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findTop10ByOrderByChangedAtDesc();
 }

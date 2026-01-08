@@ -54,6 +54,7 @@ export function CreateProjectDrawer({ open, onOpenChange }: CreateProjectDrawerP
         onSuccess: () => {
             toast.success("Project created successfully")
             queryClient.invalidateQueries({ queryKey: ["projects"] })
+            queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
             onOpenChange(false)
             form.reset()
         },

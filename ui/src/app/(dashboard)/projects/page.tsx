@@ -33,6 +33,7 @@ export default function ProjectsPage() {
         mutationFn: deleteProject,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["projects"] })
+            queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
             toast.success("Project deleted")
         },
         onError: () => toast.error("Failed to delete project")

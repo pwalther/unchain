@@ -10,6 +10,7 @@
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+
    See the License for the specific language governing permissions and
    limitations under the License.
 */
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.function.Supplier;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
 
 @Slf4j
@@ -45,7 +48,29 @@ public class UnchainAuthorizationManager implements AuthorizationManager<Request
         String method = context.getRequest().getMethod();
         String uri = context.getRequest().getRequestURI();
 
-        List<String> requiredPermissions = metadataService.getRequiredPermissions(method, uri);
+        List<String> requiredPermissions = List.of();
+        Map<String, String> resourceAttributes = new HashMap<>();
+
+        // 1. Extract required permissions and path variables from OpenAPI metadata
+        var mapping = metadataService.getRequiredPermissions(method, uri);
+        if (mapping != null) {
+            requiredPermissions = mapping.permissions();
+            String path = uri.split("\\?")[0];
+            try {
+                resourceAttributes.putAll(new org.springframework.util.AntPathMatcher()
+                        .extractUriTemplateVariables(mapping.pattern(), path));
+            } catch (Exception e) {
+                log.trace("Could not extract path variables: {}", e.getMessage());
+            }
+        }
+
+        // 2. Extract query parameters as additional context
+        context.getRequest().getParameterMap().forEach((key, values) -> {
+            if (values.length > 0) {
+                resourceAttributes.put(key, values[0]);
+            }
+        });
+
         boolean isAnonymous = auth == null || trustResolver.isAnonymous(auth);
 
         if (!isAnonymous && auth != null && auth.isAuthenticated()) {
@@ -54,11 +79,11 @@ public class UnchainAuthorizationManager implements AuthorizationManager<Request
                 username = oidcUser.getPreferredUsername() != null ? oidcUser.getPreferredUsername()
                         : oidcUser.getFullName();
             }
-            log.info("Access check: User '{}' attempting operation '{} {}' [Requires: {}]",
-                    username, method, uri, requiredPermissions);
+            log.info("Access check: User '{}' attempting operation '{} {}' [Requires: {}, Context: {}]",
+                    username, method, uri, requiredPermissions, resourceAttributes);
 
             // Delegate to the configured authorization provider
-            boolean authorized = authorizationProvider.isAuthorized(auth, requiredPermissions);
+            boolean authorized = authorizationProvider.isAuthorized(auth, requiredPermissions, resourceAttributes);
             log.debug("Authorization provider result for user '{}': {}", username, authorized);
             return new AuthorizationDecision(authorized);
         }

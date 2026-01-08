@@ -59,13 +59,59 @@ Configure your OIDC provider using the following environment variables or by edi
 
 ### Custom Authorization
 
-Unchain allows you to plug in your own authorization logic. Implement the `AuthorizationProvider` interface and configure the class path:
+Unchain allows you to plug in your own authorization logic for fine-grained access control. This is particularly useful if you want to restrict users to specific projects or environments.
+
+#### How it works
+
+The system uses an `AuthorizationProvider` interface. The `UnchainAuthorizationManager` automatically extracts context from every request (like `projectId`, `featureName`, or query parameters) and passes it to the provider.
+
+1.  **Context Extraction**: Path variables defined in the OpenAPI spec (e.g., `{projectId}`) and query parameters are captured.
+2.  **Provider Call**: The `isAuthorized` method is called with the current `Authentication`, the `requiredPermissions` from the API spec, and the `resourceAttributes` map containing the extracted context.
+
+#### Implementation
+
+To implement your own logic:
+
+1.  Create a class that implements `ch.redmoon.unchain.security.AuthorizationProvider`.
+2.  Register it as a Spring Bean (e.g., using `@Component`).
+3.  Configure the class path in your `application.yaml`:
 
 ```yaml
 unchain:
   security:
-    authorization-provider-class: ch.redmoon.unchain.security.TrustAllAuthorizationProvider
+    authorization-provider-class: com.yourcompany.security.MyProjectAuthorizationProvider
 ```
+
+**Example: Project-Level Authorization**
+
+```java
+@Component
+public class MyProjectAuthorizationProvider implements AuthorizationProvider {
+    @Override
+    public boolean isAuthorized(Authentication authentication, 
+                                List<String> requiredPermissions, 
+                                Map<String, String> resourceAttributes) {
+        
+        // 1. Get context
+        String projectId = resourceAttributes.get("projectId"); 
+        String user = authentication.getName();
+
+        // 2. Perform check
+        if (projectId != null) {
+            // Your logic: Is this user allowed to access this specific project?
+            return myAccessService.hasProjectAccess(user, projectId);
+        }
+
+        // 3. Fallback for global actions
+        return authentication.isAuthenticated();
+    }
+}
+```
+
+**Common Resource Attributes:**
+- `projectId`: Extracted from paths like `/api/projects/{projectId}/...`
+- `featureName`: Extracted from feature-specific endpoints.
+- All query parameters from the request are also available.
 
 ## Event Monitoring & Alerting
 

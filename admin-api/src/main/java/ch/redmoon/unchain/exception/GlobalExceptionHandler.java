@@ -51,6 +51,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<Error> handleNotImplemented(UnsupportedOperationException ex) {
+        log.info("Not implemented endpoint called: {}", ex.getMessage());
+        Error error = new Error().message(ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.NOT_IMPLEMENTED);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Error> handleGeneralException(Exception ex) {
         log.error("Unexpected error occurred", ex);

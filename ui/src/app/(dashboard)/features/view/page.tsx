@@ -147,6 +147,7 @@ function FeatureDetailsContent() {
             queryClient.invalidateQueries({ queryKey: ["feature", projectId, featureName] })
             queryClient.invalidateQueries({ queryKey: ["environments"] })
             queryClient.invalidateQueries({ queryKey: ["environment", variables.env] })
+            queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
             toast.success("Feature environment status updated")
 
             if (variables.enabled) {
@@ -286,6 +287,7 @@ function FeatureDetailsContent() {
                 toast.success(`Change request created for archiving ${featureName}`)
                 setArchiveConfirmOpen(false)
             } else {
+                queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
                 toast.success(`Feature ${featureName} archived`)
                 router.push("/features")
             }

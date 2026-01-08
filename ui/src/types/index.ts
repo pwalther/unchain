@@ -156,3 +156,28 @@ export interface StaleFeature {
     lastUsage: string | null;
 }
 
+export interface DashboardSummary {
+    projectCount: number;
+    featureCount: number;
+    activeFeatureCount: number;
+    staleFeatureCount: number;
+    projects: ProjectDashboardItem[];
+    recentChanges: AuditLogItem[];
+}
+
+export interface ProjectDashboardItem {
+    id: string;
+    name: string;
+    featureCount: number;
+    health: number;
+}
+
+export interface AuditLogItem {
+    id: number;
+    entityType: string;
+    entityId: string;
+    action: string;
+    changedBy: string;
+    changedAt: string;
+    data?: string;
+}

@@ -28,8 +28,25 @@ tags:
   - name: Change Requests
   - name: FeatureTag
   - name: Dependencies
+  - name: Dashboard
 
 paths:
+  # =========================================================================
+  # DASHBOARD
+  # =========================================================================
+  /dashboard:
+    get:
+      operationId: getDashboardSummary
+      summary: Get dashboard summary statistics
+      tags: [Dashboard]
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
   # =========================================================================
   # PROJECTS & FEATURES
   # =========================================================================
@@ -1343,6 +1360,92 @@ components:
       description: The ID of the segment
 
   schemas:
+    DashboardSummary:
+      type: object
+      description: Aggregated statistics and recent activity for the system dashboard.
+      properties:
+        projectCount:
+          type: integer
+          description: Total number of projects.
+          example: 5
+        featureCount:
+          type: integer
+          description: Total number of feature flags.
+          example: 42
+        activeFeatureCount:
+          type: integer
+          description: Number of features that are enabled in at least one environment.
+          example: 30
+        staleFeatureCount:
+          type: integer
+          description: Number of features marked as stale.
+          example: 3
+        projects:
+          type: array
+          description: Overview of projects for the dashboard card.
+          items:
+            $ref: "#/components/schemas/ProjectDashboardItem"
+        recentChanges:
+          type: array
+          description: List of the most recent audit log entries for feature changes.
+          items:
+            $ref: "#/components/schemas/AuditLogItem"
+
+    ProjectDashboardItem:
+      type: object
+      description: Summary data for a single project as displayed on the dashboard.
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the project.
+          example: "default"
+        name:
+          type: string
+          description: The display name of the project.
+          example: "Default Project"
+        featureCount:
+          type: integer
+          description: Number of feature flags associated with this project.
+          example: 12
+        health:
+          type: integer
+          description: A calculated health score for the project (0-100).
+          example: 95
+
+    AuditLogItem:
+      type: object
+      description: Representation of a single change event in the system audit log.
+      properties:
+        id:
+          type: integer
+          description: Internal ID of the audit log entry.
+          example: 101
+        entityType:
+          type: string
+          description: The type of entity that was affected (e.g., FeatureEntity).
+          example: "FeatureEntity"
+        entityId:
+          type: string
+          description: The unique identifier of the affected entity.
+          example: "new-login-flow"
+        action:
+          type: string
+          description: The type of change performed (e.g., CREATED, UPDATED, ENABLED).
+          example: "ENABLED"
+        changedBy:
+          type: string
+          description: The username of the person who made the change.
+          example: "jane.doe"
+        changedAt:
+          type: string
+          format: date-time
+          description: The timestamp when the change occurred.
+          example: "2026-01-08T12:00:00Z"
+        data:
+          type: string
+          description: Optional JSON-encoded metadata or state at the time of the change.
+          example: '{"environment": "production"}'
+
     # --- Feature Schemas ---
     Feature:
       type: object

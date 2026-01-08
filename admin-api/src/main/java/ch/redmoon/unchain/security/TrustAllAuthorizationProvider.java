@@ -24,8 +24,10 @@ import java.util.List;
  */
 public class TrustAllAuthorizationProvider implements AuthorizationProvider {
     @Override
-    public boolean isAuthorized(Authentication authentication, List<String> requiredPermissions) {
-        // Trust all authenticated users regardless of required permissions
+    public boolean isAuthorized(Authentication authentication, List<String> requiredPermissions,
+            java.util.Map<String, String> resourceAttributes) {
+        // Trust all authenticated users regardless of required permissions or resource
+        // context
         return authentication != null && authentication.isAuthenticated();
     }
 }

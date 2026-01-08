@@ -55,6 +55,10 @@ public class FeatureStrategyEntity {
     private String strategyName;
 
     @ManyToOne
+    @JoinColumn(name = "feature_name", insertable = false, updatable = false)
+    private FeatureEntity feature;
+
+    @ManyToOne
     @JoinColumn(name = "strategy_name", insertable = false, updatable = false)
     private StrategyDefinitionEntity strategyDefinition;
 
