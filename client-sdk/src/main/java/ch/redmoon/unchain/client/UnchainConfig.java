@@ -14,4 +14,8 @@ public class UnchainConfig {
     private final List<String> projects;
     @Builder.Default
     private final long refreshIntervalSeconds = 120;
+    @Builder.Default
+    private boolean waitforInit = false;
+    @Builder.Default
+    private long initWaitTimeSeconds = 5;
 }

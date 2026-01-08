@@ -75,6 +75,16 @@ public class UnchainClient {
 
         this.scheduler.scheduleAtFixedRate(this::refresh, 0, config.getRefreshIntervalSeconds(), TimeUnit.SECONDS);
         this.scheduler.scheduleAtFixedRate(this::sendMetrics, 30, 10 * 60, TimeUnit.SECONDS);
+
+        if (config.isWaitforInit()) {
+            try {
+                // simple wait logic - could be improved with a latch
+                Thread.sleep(Math.min(config.getInitWaitTimeSeconds() * 1000, 3000));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Interrupted while waiting for initial fetch");
+            }
+        }
     }
 
     public UnchainConfig getConfig() {
@@ -88,11 +98,11 @@ public class UnchainClient {
     public void refresh() {
         for (String projectId : config.getProjects()) {
             try {
-                String url = config.getApiUrl() + "/projects/" + projectId + "/features";
+                URI url = URI.create(config.getApiUrl().replaceAll("/$", "") + "/projects/" + projectId + "/features");
                 String token = config.getTokenSupplier() != null ? config.getTokenSupplier().get() : null;
                 log.debug("Fetching features for project: {} from {}", projectId, url);
                 HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
+                        .uri(url)
                         .header("Accept", "application/json")
                         .header("User-Agent", "unchain-java-client/" + VERSION)
                         .GET();
@@ -130,6 +140,9 @@ public class UnchainClient {
     }
 
     public boolean isEnabled(String featureName, UnchainContext context) {
+        if (config.getProjects().size() > 1) {
+            throw new IllegalStateException("Multiple projects configured, please specify project ID");
+        }
         return isEnabled(config.getProjects().get(0), featureName, config.getEnvironment(), context);
     }
 
@@ -274,12 +287,16 @@ public class UnchainClient {
         if (stickyValue == null)
             stickyValue = "anonymous";
 
-        int hash = Math.abs((featureName + ":" + stickyValue).hashCode()) % totalWeight;
-        log.trace("Variant selection for {}: hash={}, stickyValue={}", featureName, hash, stickyValue);
+        String data = featureName + ":" + stickyValue;
+        long hash = com.sangupta.murmur.Murmur3.hash_x86_32(data.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                data.length(), 0);
+        int normalized = (int) (hash % totalWeight);
+
+        log.trace("Variant selection for {}: hash={}, stickyValue={}", featureName, normalized, stickyValue);
         int currentWeight = 0;
         for (Variant variant : variants) {
             currentWeight += variant.getWeight();
-            if (hash < currentWeight) {
+            if (normalized < currentWeight) {
                 log.trace("Selected variant: {} for feature: {}", variant.getName(), featureName);
                 return variant;
             }
@@ -363,6 +380,11 @@ public class UnchainClient {
                 log.error("Failed to report metrics: Status code {}", response.statusCode());
                 // Optional: restore metrics on failure? Complex due to concurrent updates.
                 // For now, we accept loss on failure as the counts were already reset to 0.
+                // Restore counts on failure
+                metricsList.forEach(m -> {
+                    String key = m.getProjectId() + "|" + m.getFeatureName() + "|" + m.getEnvironment();
+                    metricsMap.computeIfAbsent(key, k -> new AtomicInteger(0)).addAndGet(m.getCount());
+                });
             }
         } catch (Exception e) {
             log.error("Error sending metrics", e);

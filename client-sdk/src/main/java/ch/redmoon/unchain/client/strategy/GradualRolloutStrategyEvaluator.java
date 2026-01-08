@@ -30,9 +30,9 @@ public class GradualRolloutStrategyEvaluator implements StrategyEvaluator {
         }
 
         String data = groupId + ":" + stickinessValue;
-        int hash = Math.abs(com.google.common.hash.Hashing.murmur3_32_fixed()
-                .hashString(data, java.nio.charset.StandardCharsets.UTF_8).asInt());
-        int normalized = (hash % 100) + 1;
+        long hash = com.sangupta.murmur.Murmur3.hash_x86_32(data.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                data.length(), 0);
+        int normalized = (int) (hash % 100) + 1;
 
         return normalized <= percentage;
     }

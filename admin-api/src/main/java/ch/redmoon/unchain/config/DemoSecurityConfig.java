@@ -55,11 +55,11 @@ public class DemoSecurityConfig {
                         // it
 
                         Map<String, Object> claims = Map.of(
-                                        "sub", "demo-user",
-                                        "name", "Demo User",
-                                        "email", "demo@demodomain.com",
-                                        "preferred_username", "demo",
-                                        "picture", "https://api.dicebear.com/7.x/avataaars/svg?seed=demo");
+                                        "sub", "abbie-demo-user",
+                                        "name", "Abbie Testing",
+                                        "email", "abbie@demodomain.com",
+                                        "preferred_username", "abbie",
+                                        "picture", "https://api.dicebear.com/7.x/avataaars/svg?seed=abbie");
 
                         OidcIdToken idToken = new OidcIdToken("mock-token", Instant.now(),
                                         Instant.now().plusSeconds(3600), claims);

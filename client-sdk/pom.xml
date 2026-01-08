@@ -34,10 +34,11 @@
         </dependency>
 
         <!-- Hashing for Gradual Rollout -->
+        <!-- Hashing for Gradual Rollout -->
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>33.0.0-jre</version>
+            <groupId>com.sangupta</groupId>
+            <artifactId>murmur</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Lombok -->
