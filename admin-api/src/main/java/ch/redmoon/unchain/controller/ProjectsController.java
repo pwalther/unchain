@@ -18,7 +18,6 @@ package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.ProjectsApi;
 import ch.redmoon.unchain.api.model.CreateProjectRequest;
-import ch.redmoon.unchain.api.model.Error;
 import ch.redmoon.unchain.api.model.ListProjects200Response;
 import ch.redmoon.unchain.api.model.Project;
 import ch.redmoon.unchain.api.model.UpdateProjectRequest;
@@ -63,8 +62,8 @@ public class ProjectsController implements ProjectsApi {
     @Override
     public ResponseEntity<Project> createProject(CreateProjectRequest createProjectRequest) {
         if (projectRepository.existsById(createProjectRequest.getId())) {
-            Error error = new Error().message("Project with ID '" + createProjectRequest.getId() + "' already exists.");
-            return new ResponseEntity(error, HttpStatus.CONFLICT);
+            throw new BusinessRuleViolationException(
+                    "Project with ID '" + createProjectRequest.getId() + "' already exists.");
         }
         ProjectEntity entity = new ProjectEntity();
         entity.setId(createProjectRequest.getId());

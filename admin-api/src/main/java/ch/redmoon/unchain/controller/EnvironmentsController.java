@@ -17,11 +17,10 @@
 package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.EnvironmentsApi;
-import ch.redmoon.unchain.api.model.CreateEnvironmentSchema;
 import ch.redmoon.unchain.api.model.EnvironmentSchema;
 import ch.redmoon.unchain.api.model.EnvironmentsSchema;
 import ch.redmoon.unchain.api.model.UpdateEnvironmentSchema;
-import ch.redmoon.unchain.api.model.Error;
+import ch.redmoon.unchain.api.model.CreateEnvironmentSchema;
 import ch.redmoon.unchain.entity.ChangeRequestState;
 import ch.redmoon.unchain.entity.EnvironmentEntity;
 import ch.redmoon.unchain.repository.EnvironmentRepository;
@@ -62,9 +61,8 @@ public class EnvironmentsController implements EnvironmentsApi {
     @Override
     public ResponseEntity<EnvironmentSchema> createEnvironment(CreateEnvironmentSchema createEnvironmentSchema) {
         if (environmentRepository.existsById(createEnvironmentSchema.getName())) {
-            Error error = new Error()
-                    .message("Environment '" + createEnvironmentSchema.getName() + "' already exists.");
-            return new ResponseEntity(error, HttpStatus.CONFLICT);
+            throw new BusinessRuleViolationException(
+                    "Environment '" + createEnvironmentSchema.getName() + "' already exists.");
         }
         EnvironmentEntity entity = new EnvironmentEntity();
         entity.setName(createEnvironmentSchema.getName());

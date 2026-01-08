@@ -119,6 +119,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -128,6 +129,7 @@
   0% {
     transform: translateX(-100%) skewX(-15deg);
   }
+
   100% {
     transform: translateX(200%) skewX(-15deg);
   }
@@ -145,14 +147,93 @@
   left: 0;
   width: 50%;
   height: 100%;
-  background: linear-gradient(
-    to right,
-    transparent,
-    rgba(34, 197, 94, 0.1),
-    rgba(34, 197, 94, 0.2),
-    rgba(34, 197, 94, 0.1),
-    transparent
-  );
+  background: linear-gradient(to right,
+      transparent,
+      rgba(34, 197, 94, 0.1),
+      rgba(34, 197, 94, 0.2),
+      rgba(34, 197, 94, 0.1),
+      transparent);
   animation: card-shimmer 0.8s ease-in-out forwards;
   pointer-events: none;
+}
+
+/* Prism Syntax Highlighting Overrides */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: var(--muted-foreground);
+}
+
+.token.punctuation {
+  color: var(--foreground);
+  opacity: 0.7;
+}
+
+.token.namespace {
+  opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: oklch(0.6 0.15 30);
+  /* Reddish/Orange */
+}
+
+.dark .token.property,
+.dark .token.boolean,
+.dark .token.number {
+  color: oklch(0.8 0.12 40);
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: oklch(0.6 0.15 150);
+  /* Greenish */
+}
+
+.dark .token.string {
+  color: oklch(0.85 0.12 160);
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: var(--foreground);
+  background: transparent !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: oklch(0.5 0.2 250);
+  /* Bluish */
+}
+
+.dark .token.keyword {
+  color: oklch(0.8 0.15 260);
+}
+
+.token.function,
+.token.class-name {
+  color: oklch(0.6 0.2 300);
+  /* Purplish */
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+  color: oklch(0.6 0.2 60);
+  /* Yellowish/Orange */
 }

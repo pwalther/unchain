@@ -74,7 +74,7 @@ public class UnchainClient {
         });
 
         this.scheduler.scheduleAtFixedRate(this::refresh, 0, config.getRefreshIntervalSeconds(), TimeUnit.SECONDS);
-        this.scheduler.scheduleAtFixedRate(this::sendMetrics, 10, 60, TimeUnit.SECONDS);
+        this.scheduler.scheduleAtFixedRate(this::sendMetrics, 30, 10 * 60, TimeUnit.SECONDS);
     }
 
     public UnchainConfig getConfig() {

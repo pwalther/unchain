@@ -50,9 +50,11 @@ public class ChangeRequestScheduler {
             // Apply if scheduledAt is null (immediately) or scheduledAt <= now
             if (cr.getScheduledAt() == null || cr.getScheduledAt().isBefore(now) || cr.getScheduledAt().isEqual(now)) {
                 try {
+                    log.info("Applying change request {} for project {}", cr.getId(), cr.getProjectId());
                     changeRequestService.applyChangeRequest(cr.getId());
                 } catch (Exception e) {
-                    log.error("Failed to apply change request {}: {}", cr.getId(), e.getMessage(), e);
+                    log.error("Failed to apply change request {} for project {}: {}", cr.getId(), cr.getProjectId(),
+                            e.getMessage(), e);
                     // Optionally: mark as "Failed" or leave as "Approved" to retry?
                     // For now, it stays Approved and will retry next minute.
                 }

@@ -16,6 +16,7 @@
 
 package ch.redmoon.unchain.exception;
 
+import ch.redmoon.unchain.api.model.Error;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -23,18 +24,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @ControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+    public ResponseEntity<Error> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         log.error("Data integrity violation: {}", ex.getMessage());
 
-        Map<String, String> body = new HashMap<>();
         String message = "A data integrity violation occurred.";
 
         // Try to provide a more specific message for unique constraint violations
@@ -43,24 +40,22 @@ public class GlobalExceptionHandler {
             message = "This operation conflicts with existing data (e.g. name already in use).";
         }
 
-        body.put("message", message);
-        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+        Error error = new Error().message(message);
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(BusinessRuleViolationException.class)
-    public ResponseEntity<Map<String, String>> handleBusinessRuleViolation(BusinessRuleViolationException ex) {
+    public ResponseEntity<Error> handleBusinessRuleViolation(BusinessRuleViolationException ex) {
         log.warn("Business rule violation: {}", ex.getMessage());
-        Map<String, String> body = new HashMap<>();
-        body.put("message", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+        Error error = new Error().message(ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
+    public ResponseEntity<Error> handleGeneralException(Exception ex) {
         log.error("Unexpected error occurred", ex);
 
-        Map<String, String> body = new HashMap<>();
-        body.put("message", "An unexpected error occurred: " + ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+        Error error = new Error().message("An unexpected error occurred: " + ex.getMessage());
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

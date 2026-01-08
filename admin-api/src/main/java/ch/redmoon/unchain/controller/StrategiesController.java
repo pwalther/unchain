@@ -18,6 +18,7 @@ package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.StrategiesApi;
 import ch.redmoon.unchain.api.model.*;
+import ch.redmoon.unchain.util.JsonUtils;
 import ch.redmoon.unchain.entity.*;
 import ch.redmoon.unchain.repository.FeatureStrategyRepository;
 import ch.redmoon.unchain.repository.StrategyDefinitionRepository;
@@ -222,8 +223,16 @@ public class StrategiesController implements StrategiesApi {
                 ve.setWeight(v.getWeight());
                 ve.setStickiness(v.getStickiness());
                 if (v.getPayload() != null) {
-                    ve.setPayloadType(v.getPayload().getType().getValue());
-                    ve.setPayloadValue(v.getPayload().getValue());
+                    String payloadType = v.getPayload().getType().getValue();
+                    String payloadValue = v.getPayload().getValue();
+
+                    if ("json".equals(payloadType) && !JsonUtils.isValidJson(payloadValue)) {
+                        throw new BusinessRuleViolationException(
+                                "Invalid JSON payload for variant: " + v.getName());
+                    }
+
+                    ve.setPayloadType(payloadType);
+                    ve.setPayloadValue(payloadValue);
                 }
                 ve.setFeatureStrategy(featureStrategy);
                 variantEntities.add(ve);
@@ -369,8 +378,16 @@ public class StrategiesController implements StrategiesApi {
                 ve.setWeight(v.getWeight());
                 ve.setStickiness(v.getStickiness());
                 if (v.getPayload() != null) {
-                    ve.setPayloadType(v.getPayload().getType().getValue());
-                    ve.setPayloadValue(v.getPayload().getValue());
+                    String payloadType = v.getPayload().getType().getValue();
+                    String payloadValue = v.getPayload().getValue();
+
+                    if ("json".equals(payloadType) && !JsonUtils.isValidJson(payloadValue)) {
+                        throw new BusinessRuleViolationException(
+                                "Invalid JSON payload for variant: " + v.getName());
+                    }
+
+                    ve.setPayloadType(payloadType);
+                    ve.setPayloadValue(payloadValue);
                 }
                 ve.setFeatureStrategy(featureStrategy);
                 featureStrategy.getVariants().add(ve);

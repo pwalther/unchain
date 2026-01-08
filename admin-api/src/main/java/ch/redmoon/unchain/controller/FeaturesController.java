@@ -18,9 +18,9 @@ package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.FeaturesApi;
 import ch.redmoon.unchain.api.model.*;
-import ch.redmoon.unchain.api.model.Error;
 import ch.redmoon.unchain.entity.*;
 import ch.redmoon.unchain.repository.*;
+import ch.redmoon.unchain.util.JsonUtils;
 import ch.redmoon.unchain.event.UnchainEventPublisher;
 import ch.redmoon.unchain.entity.ChangeRequestState;
 import lombok.RequiredArgsConstructor;
@@ -73,8 +73,7 @@ public class FeaturesController implements FeaturesApi {
                 .map(project -> {
                     if (featureRepository.existsByNameIgnoreCase(featureName)) {
                         log.warn("Feature '{}' already exists (case-insensitive check)", featureName);
-                        Error error = new Error().message("Feature '" + featureName + "' already exists.");
-                        return new ResponseEntity(error, HttpStatus.CONFLICT);
+                        throw new BusinessRuleViolationException("Feature '" + featureName + "' already exists.");
                     }
 
                     try {
@@ -97,8 +96,16 @@ public class FeaturesController implements FeaturesApi {
                                 ve.setWeight(v.getWeight());
                                 ve.setStickiness(v.getStickiness());
                                 if (v.getPayload() != null) {
-                                    ve.setPayloadType(v.getPayload().getType().getValue());
-                                    ve.setPayloadValue(v.getPayload().getValue());
+                                    String payloadType = v.getPayload().getType().getValue();
+                                    String payloadValue = v.getPayload().getValue();
+
+                                    if ("json".equals(payloadType) && !JsonUtils.isValidJson(payloadValue)) {
+                                        throw new BusinessRuleViolationException(
+                                                "Invalid JSON payload for variant: " + v.getName());
+                                    }
+
+                                    ve.setPayloadType(payloadType);
+                                    ve.setPayloadValue(payloadValue);
                                 }
                                 entity.getVariants().add(ve);
                             }
@@ -111,8 +118,7 @@ public class FeaturesController implements FeaturesApi {
                         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
                         log.error("Conflict detected while saving feature '{}': {}", featureName, e.getMessage());
-                        Error error = new Error().message("Feature '" + featureName + "' already exists.");
-                        return new ResponseEntity(error, HttpStatus.CONFLICT);
+                        throw new BusinessRuleViolationException("Feature '" + featureName + "' already exists.");
                     }
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -159,8 +165,16 @@ public class FeaturesController implements FeaturesApi {
                             ve.setWeight(v.getWeight());
                             ve.setStickiness(v.getStickiness());
                             if (v.getPayload() != null) {
-                                ve.setPayloadType(v.getPayload().getType().getValue());
-                                ve.setPayloadValue(v.getPayload().getValue());
+                                String payloadType = v.getPayload().getType().getValue();
+                                String payloadValue = v.getPayload().getValue();
+
+                                if ("json".equals(payloadType) && !JsonUtils.isValidJson(payloadValue)) {
+                                    throw new BusinessRuleViolationException(
+                                            "Invalid JSON payload for variant: " + v.getName());
+                                }
+
+                                ve.setPayloadType(payloadType);
+                                ve.setPayloadValue(payloadValue);
                             }
                             f.getVariants().add(ve);
                         }

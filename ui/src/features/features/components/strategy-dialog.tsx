@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { X, Plus, Hash, Percent, ListIcon, Type, CheckCircle2, Settings, Filter, Trash2, Calendar, Globe, User } from "lucide-react"
+import { X, Plus, Hash, Percent, ListIcon, Type, CheckCircle2, Settings, Filter, Trash2, Calendar, Globe, User, Code2 } from "lucide-react"
+import { JsonEditor } from "@/components/ui/json-editor"
 
 import {
     Dialog,
@@ -56,32 +57,25 @@ const formSchema = z.object({
         weight: z.number().min(0).max(1000),
         stickiness: z.string().optional().nullable(),
         payload: z.object({
-            type: z.string(),
+            type: z.enum(["string", "json", "number"]),
             value: z.string()
         }).optional().nullable()
+    }).superRefine((data, ctx) => {
+        if (data.payload?.type === 'json' && data.payload.value) {
+            try {
+                JSON.parse(data.payload.value)
+            } catch (e) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: "Invalid JSON format",
+                    path: ['payload', 'value']
+                })
+            }
+        }
     })),
 })
 
-type FormValues = {
-    name: string;
-    parameters: Record<string, string | boolean | string[]>;
-    constraints: {
-        contextName: string;
-        operator: string;
-        values: string[];
-        caseInsensitive: boolean;
-        inverted: boolean;
-    }[];
-    variants: {
-        name: string;
-        weight: number;
-        stickiness?: string | null;
-        payload?: {
-            type: string;
-            value: string;
-        } | null;
-    }[];
-}
+type FormValues = z.infer<typeof formSchema>
 
 interface StrategyDialogProps {
     open: boolean
@@ -706,7 +700,70 @@ export function StrategyDialog({
                                                                 </FormItem>
                                                             )}
                                                         />
+                                                        <FormField
+                                                            control={form.control}
+                                                            name={`variants.${index}.payload.type`}
+                                                            render={({ field }) => (
+                                                                <FormItem>
+                                                                    <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Payload Type</FormLabel>
+                                                                    <Select
+                                                                        onValueChange={(val) => {
+                                                                            field.onChange(val)
+                                                                            if (!form.getValues(`variants.${index}.payload.value`)) {
+                                                                                form.setValue(`variants.${index}.payload.value`, val === 'json' ? '{}' : '')
+                                                                            }
+                                                                        }}
+                                                                        defaultValue={field.value || "string"}
+                                                                        value={field.value || "string"}
+                                                                    >
+                                                                        <FormControl>
+                                                                            <SelectTrigger className="h-10 bg-background/50">
+                                                                                <SelectValue placeholder="Select type" />
+                                                                            </SelectTrigger>
+                                                                        </FormControl>
+                                                                        <SelectContent>
+                                                                            <SelectItem value="string">
+                                                                                <div className="flex items-center gap-2"><Type className="h-3.5 w-3.5" /> String</div>
+                                                                            </SelectItem>
+                                                                            <SelectItem value="json">
+                                                                                <div className="flex items-center gap-2"><Code2 className="h-3.5 w-3.5" /> JSON</div>
+                                                                            </SelectItem>
+                                                                            <SelectItem value="number">
+                                                                                <div className="flex items-center gap-2"><Hash className="h-3.5 w-3.5" /> Number</div>
+                                                                            </SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                </FormItem>
+                                                            )}
+                                                        />
                                                     </div>
+
+                                                    <FormField
+                                                        control={form.control}
+                                                        name={`variants.${index}.payload.value`}
+                                                        render={({ field }) => (
+                                                            <FormItem>
+                                                                <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Payload Value</FormLabel>
+                                                                <FormControl>
+                                                                    {form.watch(`variants.${index}.payload.type`) === 'json' ? (
+                                                                        <JsonEditor
+                                                                            value={field.value || "{}"}
+                                                                            onChange={field.onChange}
+                                                                            className="min-h-[100px]"
+                                                                        />
+                                                                    ) : (
+                                                                        <Input
+                                                                            {...field}
+                                                                            type={form.watch(`variants.${index}.payload.type`) === 'number' ? 'number' : 'text'}
+                                                                            placeholder={form.watch(`variants.${index}.payload.type`) === 'json' ? '{"key": "value"}' : 'Enter payload value'}
+                                                                            className="h-10 bg-background/50"
+                                                                        />
+                                                                    )}
+                                                                </FormControl>
+                                                                <FormMessage />
+                                                            </FormItem>
+                                                        )}
+                                                    />
                                                 </div>
                                             ))}
 

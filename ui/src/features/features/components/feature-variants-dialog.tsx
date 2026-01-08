@@ -3,7 +3,8 @@
 import { useForm, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { Plus, Trash2, Package } from "lucide-react"
+import { Plus, Trash2, Package, Type, Hash, Code2 } from "lucide-react"
+import { JsonEditor } from "@/components/ui/json-editor"
 import {
     Dialog,
     DialogContent,
@@ -39,6 +40,18 @@ const variantSchema = z.object({
         type: z.enum(["string", "json", "number"]),
         value: z.string()
     }).nullable().optional()
+}).superRefine((data, ctx) => {
+    if (data.payload?.type === 'json' && data.payload.value) {
+        try {
+            JSON.parse(data.payload.value)
+        } catch (e) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Invalid JSON format",
+                path: ['payload', 'value']
+            })
+        }
+    }
 })
 
 const formSchema = z.object({
@@ -134,29 +147,95 @@ export function FeatureVariantsDialog({ open, onOpenChange, feature, onSave, con
                                         />
                                     </div>
 
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <FormField
+                                            control={form.control}
+                                            name={`variants.${index}.stickiness`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Stickiness Override</FormLabel>
+                                                    <Select
+                                                        onValueChange={field.onChange}
+                                                        defaultValue={field.value || ""}
+                                                        value={field.value || ""}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-10 bg-background/50">
+                                                                <SelectValue placeholder="Default (userId)" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="default">Default (userId)</SelectItem>
+                                                            {contextFields.map(cf => (
+                                                                <SelectItem key={cf.name} value={cf.name}>{cf.name}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+
+                                        <FormField
+                                            control={form.control}
+                                            name={`variants.${index}.payload.type`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Payload Type</FormLabel>
+                                                    <Select
+                                                        onValueChange={(val) => {
+                                                            field.onChange(val)
+                                                            if (!form.getValues(`variants.${index}.payload.value`)) {
+                                                                form.setValue(`variants.${index}.payload.value`, val === 'json' ? '{}' : '')
+                                                            }
+                                                        }}
+                                                        defaultValue={field.value || "string"}
+                                                        value={field.value || "string"}
+                                                    >
+                                                        <FormControl>
+                                                            <SelectTrigger className="h-10 bg-background/50">
+                                                                <SelectValue placeholder="Select type" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            <SelectItem value="string">
+                                                                <div className="flex items-center gap-2"><Type className="h-3.5 w-3.5" /> String</div>
+                                                            </SelectItem>
+                                                            <SelectItem value="json">
+                                                                <div className="flex items-center gap-2"><Code2 className="h-3.5 w-3.5" /> JSON</div>
+                                                            </SelectItem>
+                                                            <SelectItem value="number">
+                                                                <div className="flex items-center gap-2"><Hash className="h-3.5 w-3.5" /> Number</div>
+                                                            </SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+
                                     <FormField
                                         control={form.control}
-                                        name={`variants.${index}.stickiness`}
+                                        name={`variants.${index}.payload.value`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-xs font-bold uppercase text-muted-foreground">Stickiness Override</FormLabel>
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    defaultValue={field.value || ""}
-                                                    value={field.value || ""}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Default (userId)" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="default">Default (userId)</SelectItem>
-                                                        {contextFields.map(cf => (
-                                                            <SelectItem key={cf.name} value={cf.name}>{cf.name}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                <FormLabel className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">Payload Value</FormLabel>
+                                                <FormControl>
+                                                    {form.watch(`variants.${index}.payload.type`) === 'json' ? (
+                                                        <JsonEditor
+                                                            value={field.value || "{}"}
+                                                            onChange={field.onChange}
+                                                            className="min-h-[100px]"
+                                                        />
+                                                    ) : (
+                                                        <Input
+                                                            {...field}
+                                                            type={form.watch(`variants.${index}.payload.type`) === 'number' ? 'number' : 'text'}
+                                                            placeholder={form.watch(`variants.${index}.payload.type`) === 'json' ? '{"key": "value"}' : 'Enter payload value'}
+                                                            className="h-10 bg-background/50"
+                                                        />
+                                                    )}
+                                                </FormControl>
+                                                <FormMessage />
                                             </FormItem>
                                         )}
                                     />
