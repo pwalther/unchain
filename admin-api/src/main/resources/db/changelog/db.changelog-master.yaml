@@ -51,10 +51,10 @@ databaseChangeLog:
                   file: changes/017-add-cascade-delete-to-change-request-change.yaml
                   relativeToChangelogFile: true
         - include:
-                  file: changes/v018-create-audit-log.yaml
+                  file: changes/018-create-audit-log.yaml
                   relativeToChangelogFile: true
         - include:
-                  file: changes/v019-add-variants.yaml
+                  file: changes/019-add-variants.yaml
                   relativeToChangelogFile: true
         - include:
                   file: changes/020-create-metrics-table.yaml

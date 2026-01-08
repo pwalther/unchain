@@ -52,7 +52,7 @@ function ChangeRequestDetailContent() {
             queryClient.invalidateQueries({ queryKey: ["environment", request?.environment] })
             toast.success("Change request approved")
         },
-        onError: () => toast.error("Failed to approve change request")
+        onError: (error: any) => toast.error(error.message || "Failed to approve change request")
     })
 
     const applyMutation = useMutation({
@@ -63,7 +63,7 @@ function ChangeRequestDetailContent() {
             queryClient.invalidateQueries({ queryKey: ["environment", request?.environment] })
             toast.success("Change request applied")
         },
-        onError: () => toast.error("Failed to apply changes")
+        onError: (error: any) => toast.error(error.message || "Failed to apply changes")
     })
 
     const rejectMutation = useMutation({
@@ -72,7 +72,7 @@ function ChangeRequestDetailContent() {
             queryClient.invalidateQueries({ queryKey: ["change-request", projectId, id] })
             toast.success("Change request rejected")
         },
-        onError: () => toast.error("Failed to reject change request")
+        onError: (error: any) => toast.error(error.message || "Failed to reject change request")
     })
 
     if (!projectId || !id) {

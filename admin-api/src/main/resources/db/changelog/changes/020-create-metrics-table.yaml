@@ -43,3 +43,17 @@ databaseChangeLog:
                   type: TIMESTAMP
                   constraints:
                     nullable: false
+        - createIndex:
+            tableName: feature_metrics
+            indexName: idx_metrics_project_feature
+            columns:
+              - column:
+                  name: project_id
+              - column:
+                  name: feature_name
+        - createIndex:
+            tableName: feature_metrics
+            indexName: idx_metrics_reported_at
+            columns:
+              - column:
+                  name: reported_at

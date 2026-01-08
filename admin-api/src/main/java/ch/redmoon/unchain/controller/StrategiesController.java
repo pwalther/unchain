@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ch.redmoon.unchain.exception.BusinessRuleViolationException;
+import ch.redmoon.unchain.entity.ChangeRequestState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,8 +48,6 @@ public class StrategiesController implements StrategiesApi {
     private final FeatureRepository featureRepository;
     private final EnvironmentRepository environmentRepository;
     private final ch.redmoon.unchain.repository.ChangeRequestRepository changeRequestRepository;
-
-    private static final java.util.List<String> PENDING_STATES = java.util.List.of("Draft", "In review", "Approved");
 
     @Override
     public ResponseEntity<ListStrategies200Response> listStrategies() {
@@ -240,7 +239,8 @@ public class StrategiesController implements StrategiesApi {
     @Override
     public ResponseEntity<Void> deleteStrategyForFeatureInEnvironment(String projectId, String featureName,
             String environment, String strategyId) {
-        if (changeRequestRepository.existsByFeatureNameAndChangeRequestStateIn(featureName, PENDING_STATES)) {
+        if (changeRequestRepository.existsByFeatureNameAndChangeRequestStateIn(featureName,
+                ChangeRequestState.getPendingStates())) {
             throw new BusinessRuleViolationException(
                     "Cannot delete strategy because the feature has pending change requests.");
         }

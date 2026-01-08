@@ -18,9 +18,11 @@ package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.FeaturesApi;
 import ch.redmoon.unchain.api.model.*;
+import ch.redmoon.unchain.api.model.Error;
 import ch.redmoon.unchain.entity.*;
 import ch.redmoon.unchain.repository.*;
 import ch.redmoon.unchain.event.UnchainEventPublisher;
+import ch.redmoon.unchain.entity.ChangeRequestState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -44,8 +46,6 @@ public class FeaturesController implements FeaturesApi {
     private final FeatureStrategyRepository featureStrategyRepository;
     private final ch.redmoon.unchain.repository.ChangeRequestRepository changeRequestRepository;
     private final UnchainEventPublisher eventPublisher;
-
-    private static final java.util.List<String> PENDING_STATES = java.util.List.of("Draft", "In review", "Approved");
 
     @Override
     public ResponseEntity<GetFeaturesByProject200Response> getFeaturesByProject(String projectId) {
@@ -73,7 +73,8 @@ public class FeaturesController implements FeaturesApi {
                 .map(project -> {
                     if (featureRepository.existsByNameIgnoreCase(featureName)) {
                         log.warn("Feature '{}' already exists (case-insensitive check)", featureName);
-                        return ResponseEntity.status(HttpStatus.CONFLICT).<Feature>body(null);
+                        Error error = new Error().message("Feature '" + featureName + "' already exists.");
+                        return new ResponseEntity(error, HttpStatus.CONFLICT);
                     }
 
                     try {
@@ -110,7 +111,8 @@ public class FeaturesController implements FeaturesApi {
                         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
                         log.error("Conflict detected while saving feature '{}': {}", featureName, e.getMessage());
-                        return ResponseEntity.status(HttpStatus.CONFLICT).<Feature>body(null);
+                        Error error = new Error().message("Feature '" + featureName + "' already exists.");
+                        return new ResponseEntity(error, HttpStatus.CONFLICT);
                     }
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -176,7 +178,7 @@ public class FeaturesController implements FeaturesApi {
                 .filter(f -> f.getProject().getId().equals(projectId))
                 .map(f -> {
                     if (changeRequestRepository.existsByFeatureNameAndChangeRequestStateIn(featureName,
-                            PENDING_STATES)) {
+                            ChangeRequestState.getPendingStates())) {
                         throw new BusinessRuleViolationException(
                                 "Cannot delete or archive feature because it has pending change requests.");
                     }

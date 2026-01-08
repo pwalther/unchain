@@ -81,6 +81,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Project"
+        "409":
+          description: Conflict. A project with this name already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /projects/{projectId}:
     get:
@@ -164,6 +170,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Feature"
+        "409":
+          description: Conflict. A feature with this name already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 
   /projects/{projectId}/features/{featureName}:
     get:
@@ -239,6 +251,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/environmentSchema"
+        "409":
+          description: Conflict. An environment with this name already exists.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "400":
           description: The request data does not match what we expect.
           content:
@@ -2082,3 +2100,11 @@ components:
           type: string
           format: date-time
           nullable: true
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        id:
+          type: string

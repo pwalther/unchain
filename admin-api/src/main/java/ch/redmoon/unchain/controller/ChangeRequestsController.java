@@ -32,11 +32,13 @@ import ch.redmoon.unchain.repository.ChangeRequestRepository;
 import ch.redmoon.unchain.repository.EnvironmentRepository;
 import ch.redmoon.unchain.event.UnchainEventPublisher;
 import ch.redmoon.unchain.service.ChangeRequestService;
+import ch.redmoon.unchain.exception.BusinessRuleViolationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
@@ -81,6 +83,7 @@ public class ChangeRequestsController implements ChangeRequestsApi {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<ChangeRequest> createChangeRequest(String projectId,
             CreateChangeRequestRequest request) {
         ChangeRequestEntity entity = new ChangeRequestEntity();
@@ -108,7 +111,8 @@ public class ChangeRequestsController implements ChangeRequestsApi {
                     payloadStr = objectMapper.writeValueAsString(changeReq.getPayload());
                 } catch (Exception e) {
                     log.error("Failed to serialize payload", e);
-                    continue;
+                    throw new BusinessRuleViolationException(
+                            "Failed to serialize payload for feature: " + changeReq.getFeature());
                 }
 
                 final String finalPayloadStr = payloadStr;
@@ -142,13 +146,14 @@ public class ChangeRequestsController implements ChangeRequestsApi {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<ChangeRequest> addChangesToRequest(String projectId, Integer changeRequestId,
             ch.redmoon.unchain.api.model.AddChangesToRequestRequest request) {
         ChangeRequestEntity cr = changeRequestRepository.findById(changeRequestId)
-                .orElseThrow(() -> new RuntimeException("Change request not found"));
+                .orElseThrow(() -> new BusinessRuleViolationException("Change request not found"));
 
         if (!"Draft".equals(cr.getState())) {
-            throw new RuntimeException("Changes can only be added to Draft change requests");
+            throw new BusinessRuleViolationException("Changes can only be added to Draft change requests");
         }
 
         List<ChangeRequestChangeEntity> existingChanges = changeRequestChangeRepository
@@ -161,7 +166,8 @@ public class ChangeRequestsController implements ChangeRequestsApi {
                     payloadStr = objectMapper.writeValueAsString(changeReq.getPayload());
                 } catch (Exception e) {
                     log.error("Failed to serialize payload", e);
-                    continue;
+                    throw new BusinessRuleViolationException(
+                            "Failed to serialize payload for feature: " + changeReq.getFeature());
                 }
 
                 final String finalPayloadStr = payloadStr;
@@ -217,7 +223,8 @@ public class ChangeRequestsController implements ChangeRequestsApi {
     public ResponseEntity<Void> approveChangeRequest(String projectId, Integer changeRequestId) {
         changeRequestRepository.findById(changeRequestId).ifPresent(cr -> {
             if ("Draft".equals(cr.getState())) {
-                throw new RuntimeException("Cannot approve a Draft change request. Please submit it for review first.");
+                throw new BusinessRuleViolationException(
+                        "Cannot approve a Draft change request. Please submit it for review first.");
             }
             if (cr.getScheduledAt() == null) {
                 // If no schedule, apply immediately

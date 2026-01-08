@@ -21,6 +21,8 @@ import ch.redmoon.unchain.api.model.CreateEnvironmentSchema;
 import ch.redmoon.unchain.api.model.EnvironmentSchema;
 import ch.redmoon.unchain.api.model.EnvironmentsSchema;
 import ch.redmoon.unchain.api.model.UpdateEnvironmentSchema;
+import ch.redmoon.unchain.api.model.Error;
+import ch.redmoon.unchain.entity.ChangeRequestState;
 import ch.redmoon.unchain.entity.EnvironmentEntity;
 import ch.redmoon.unchain.repository.EnvironmentRepository;
 import ch.redmoon.unchain.repository.FeatureRepository;
@@ -45,34 +47,31 @@ public class EnvironmentsController implements EnvironmentsApi {
     private final ProjectRepository projectRepository;
     private final ch.redmoon.unchain.repository.ChangeRequestRepository changeRequestRepository;
 
-    private static final java.util.List<String> PENDING_STATES = java.util.List.of("Draft", "In review", "Approved");
-
     @Override
     public ResponseEntity<EnvironmentsSchema> getAllEnvironments() {
         List<EnvironmentSchema> dtos = environmentRepository.findAll().stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
-        EnvironmentsSchema schema = new EnvironmentsSchema();
-        schema.setEnvironments(dtos);
-        schema.setVersion(1); // Stub version
-        return ResponseEntity.ok(schema);
+
+        EnvironmentsSchema response = new EnvironmentsSchema();
+        response.setEnvironments(dtos);
+
+        return ResponseEntity.ok(response);
     }
 
     @Override
     public ResponseEntity<EnvironmentSchema> createEnvironment(CreateEnvironmentSchema createEnvironmentSchema) {
         if (environmentRepository.existsById(createEnvironmentSchema.getName())) {
-            return ResponseEntity.badRequest().build();
+            Error error = new Error()
+                    .message("Environment '" + createEnvironmentSchema.getName() + "' already exists.");
+            return new ResponseEntity(error, HttpStatus.CONFLICT);
         }
         EnvironmentEntity entity = new EnvironmentEntity();
         entity.setName(createEnvironmentSchema.getName());
         entity.setType(createEnvironmentSchema.getType());
-        entity.setEnabled(createEnvironmentSchema.getEnabled() != null ? createEnvironmentSchema.getEnabled() : true);
+        entity.setEnabled(Boolean.TRUE.equals(createEnvironmentSchema.getEnabled()));
         entity.setSortOrder(createEnvironmentSchema.getSortOrder());
-        entity.setRequiredApprovals(
-                createEnvironmentSchema.getRequiredApprovals() != null
-                        && createEnvironmentSchema.getRequiredApprovals() > 0
-                                ? createEnvironmentSchema.getRequiredApprovals()
-                                : 0);
+        entity.setRequiredApprovals(createEnvironmentSchema.getRequiredApprovals());
 
         EnvironmentEntity saved = environmentRepository.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToDto(saved));
@@ -96,9 +95,8 @@ public class EnvironmentsController implements EnvironmentsApi {
                     if (updateEnvironmentSchema.getSortOrder() != null)
                         entity.setSortOrder(updateEnvironmentSchema.getSortOrder());
                     if (updateEnvironmentSchema.getRequiredApprovals() != null)
-                        entity.setRequiredApprovals(updateEnvironmentSchema.getRequiredApprovals() > 0
-                                ? updateEnvironmentSchema.getRequiredApprovals()
-                                : 0);
+                        entity.setRequiredApprovals(updateEnvironmentSchema.getRequiredApprovals());
+
                     EnvironmentEntity saved = environmentRepository.save(entity);
                     return ResponseEntity.ok(mapToDto(saved));
                 })
@@ -109,17 +107,15 @@ public class EnvironmentsController implements EnvironmentsApi {
     public ResponseEntity<Void> removeEnvironment(String name) {
         return environmentRepository.findById(name)
                 .map(entity -> {
-                    if (changeRequestRepository.existsByEnvironmentAndStateIn(name, PENDING_STATES)) {
+                    if (changeRequestRepository.existsByEnvironmentAndStateIn(name,
+                            ChangeRequestState.getPendingStates())) {
                         throw new BusinessRuleViolationException(
                                 "Cannot delete environment because it has pending change requests.");
-                    }
-                    if (entity.getRequiredApprovals() > 0) {
-                        return ResponseEntity.badRequest().<Void>build();
                     }
                     environmentRepository.delete(entity);
                     return ResponseEntity.ok().<Void>build();
                 })
-                .orElse(ResponseEntity.ok().build());
+                .orElse(ResponseEntity.notFound().build());
     }
 
     private EnvironmentSchema mapToDto(EnvironmentEntity entity) {
@@ -127,23 +123,15 @@ public class EnvironmentsController implements EnvironmentsApi {
         dto.setName(entity.getName());
         dto.setType(entity.getType());
         dto.setEnabled(entity.isEnabled());
-        dto.setProtected(entity.getRequiredApprovals() != null && entity.getRequiredApprovals() > 0);
         dto.setSortOrder(entity.getSortOrder());
         dto.setRequiredApprovals(entity.getRequiredApprovals());
 
-        // Calculate actual counts
-        long enabledToggles = featureRepository.findAll().stream()
-                .filter(f -> f.getEnvironments().stream().anyMatch(e -> e.getName().equals(entity.getName())))
-                .count();
+        long featureCount = featureRepository.countByEnvironmentsName(entity.getName());
+        dto.setEnabledToggleCount((int) featureCount);
 
-        long projectsUsingEnv = projectRepository.findAll().stream()
-                .filter(p -> p.getFeatures().stream()
-                        .anyMatch(f -> f.getEnvironments().stream()
-                                .anyMatch(e -> e.getName().equals(entity.getName()))))
-                .count();
+        long projectCount = projectRepository.count();
+        dto.setProjectCount((int) projectCount);
 
-        dto.setProjectCount((int) projectsUsingEnv);
-        dto.setEnabledToggleCount((int) enabledToggles);
         return dto;
     }
 }

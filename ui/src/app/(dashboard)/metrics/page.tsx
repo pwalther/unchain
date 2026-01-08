@@ -30,6 +30,8 @@ import { getProjects } from "@/features/projects/actions"
 import { getProjectMetrics } from "@/features/metrics/actions"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export default function MetricsPage() {
     const [selectedProjectId, setSelectedProjectId] = useState<string>("")
@@ -59,11 +61,11 @@ export default function MetricsPage() {
     const totalHits = metrics?.featureActivity?.reduce((sum, fa) => sum + fa.count, 0) || 0
 
     return (
-        <div className="flex flex-col gap-8 p-8 animate-in fade-in duration-500">
+        <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Project Metrics</h1>
-                    <p className="text-muted-foreground mt-1 text-balance">
+                    <h1 className="text-2xl font-semibold tracking-tight">Project Metrics</h1>
+                    <p className="text-sm text-muted-foreground">
                         Insights into feature activity, client distribution, and code hygiene.
                     </p>
                 </div>
@@ -114,7 +116,14 @@ export default function MetricsPage() {
                         <AlertTriangle className="h-4 w-4 text-amber-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-amber-600">{metrics?.staleFeatures?.length || 0}</div>
+                        <div className={cn(
+                            "text-2xl font-bold transition-all duration-300",
+                            (metrics?.staleFeatures?.length || 0) > 0
+                                ? "text-orange-500 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)]"
+                                : ""
+                        )}>
+                            {metrics?.staleFeatures?.length || 0}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Recommended for removal
                         </p>

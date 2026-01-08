@@ -39,3 +39,23 @@ databaseChangeLog:
               - column:
                   name: data
                   type: TEXT
+        - createIndex:
+            tableName: audit_log
+            indexName: idx_audit_log_entity
+            columns:
+              - column:
+                  name: entity_type
+              - column:
+                  name: entity_id
+        - createIndex:
+            tableName: audit_log
+            indexName: idx_audit_log_changed_at
+            columns:
+              - column:
+                  name: changed_at
+        - createIndex:
+            tableName: audit_log
+            indexName: idx_audit_log_changed_by
+            columns:
+              - column:
+                  name: changed_by

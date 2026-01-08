@@ -18,9 +18,11 @@ package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.ProjectsApi;
 import ch.redmoon.unchain.api.model.CreateProjectRequest;
+import ch.redmoon.unchain.api.model.Error;
 import ch.redmoon.unchain.api.model.ListProjects200Response;
 import ch.redmoon.unchain.api.model.Project;
 import ch.redmoon.unchain.api.model.UpdateProjectRequest;
+import ch.redmoon.unchain.entity.ChangeRequestState;
 import ch.redmoon.unchain.entity.ProjectEntity;
 import ch.redmoon.unchain.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,18 +45,10 @@ public class ProjectsController implements ProjectsApi {
     private final ProjectRepository projectRepository;
     private final ch.redmoon.unchain.repository.ChangeRequestRepository changeRequestRepository;
 
-    private static final java.util.List<String> PENDING_STATES = java.util.List.of("Draft", "In review", "Approved");
-
     @Override
     public ResponseEntity<ListProjects200Response> listProjects(Optional<Boolean> archived) {
         List<ProjectEntity> entities;
         if (archived.isPresent() && archived.get()) {
-            // Logic to get archived only, or all including archived?
-            // Usually 'archived=true' might mean "include archived" or "only archived".
-            // Let's assume for now it means returning all if true, or maybe just return
-            // all.
-            // But looking at existing repository method `findAllByArchivedIsFalse`, implied
-            // default is active only.
             entities = projectRepository.findAll();
         } else {
             entities = projectRepository.findAllByArchivedIsFalse();
@@ -69,7 +63,8 @@ public class ProjectsController implements ProjectsApi {
     @Override
     public ResponseEntity<Project> createProject(CreateProjectRequest createProjectRequest) {
         if (projectRepository.existsById(createProjectRequest.getId())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            Error error = new Error().message("Project with ID '" + createProjectRequest.getId() + "' already exists.");
+            return new ResponseEntity(error, HttpStatus.CONFLICT);
         }
         ProjectEntity entity = new ProjectEntity();
         entity.setId(createProjectRequest.getId());
@@ -97,7 +92,8 @@ public class ProjectsController implements ProjectsApi {
                 .map(entity -> {
                     if (updateProjectRequest.getName() != null
                             && !updateProjectRequest.getName().equals(entity.getName())) {
-                        if (changeRequestRepository.existsByProjectIdAndStateIn(projectId, PENDING_STATES)) {
+                        if (changeRequestRepository.existsByProjectIdAndStateIn(projectId,
+                                ChangeRequestState.getPendingStates())) {
                             throw new BusinessRuleViolationException(
                                     "Cannot rename project because it has pending change requests.");
                         }
@@ -117,7 +113,7 @@ public class ProjectsController implements ProjectsApi {
         if (!projectRepository.existsById(projectId)) {
             return ResponseEntity.notFound().build();
         }
-        if (changeRequestRepository.existsByProjectIdAndStateIn(projectId, PENDING_STATES)) {
+        if (changeRequestRepository.existsByProjectIdAndStateIn(projectId, ChangeRequestState.getPendingStates())) {
             throw new BusinessRuleViolationException("Cannot delete project because it has pending change requests.");
         }
         projectRepository.deleteById(projectId);
@@ -131,8 +127,6 @@ public class ProjectsController implements ProjectsApi {
         dto.setDescription(entity.getDescription());
         dto.setHealth(entity.getHealth());
         dto.setUpdatedAt(entity.getUpdatedAt());
-        // dto.setFeatureCount(entity.getFeatures().size()); // Assuming mapped in
-        // entities
         return dto;
     }
 }

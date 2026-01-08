@@ -32,4 +32,6 @@ public interface FeatureRepository extends JpaRepository<FeatureEntity, String> 
     boolean existsByNameIgnoreCase(@Param("name") String name);
 
     List<FeatureEntity> findByProjectIdAndStale(String projectId, boolean stale);
+
+    long countByEnvironmentsName(String environmentName);
 }
