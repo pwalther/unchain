@@ -13,7 +13,7 @@ export interface User {
 export function useAuth() {
     return useQuery<User>({
         queryKey: ["auth", "me"],
-        queryFn: () => apiFetch<User>("/api/me"),
+        queryFn: () => apiFetch<User>("/user"),
         retry: 3,
         retryDelay: 1000, // Retry every second instead of exponential backoff
     })

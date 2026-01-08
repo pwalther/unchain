@@ -52,6 +52,23 @@ paths:
                 $ref: "#/components/schemas/DashboardSummary"
 
   # =========================================================================
+  # USER
+  # =========================================================================
+  /user:
+    get:
+      operationId: getUser
+      summary: Get current user
+      description: Retrieves the profile of the currently authenticated user.
+      tags: [User]
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # =========================================================================
   # PROJECTS & FEATURES
   # =========================================================================
   /projects:
@@ -1299,6 +1316,32 @@ components:
       description: The name of the parent feature
 
   schemas:
+    User:
+      type: object
+      description: The authenticated user's profile information.
+      properties:
+        authenticated:
+          type: boolean
+          description: Whether the user is authenticated.
+        name:
+          type: string
+          description: The user's full name.
+        email:
+          type: string
+          format: email
+          description: The user's email address.
+        username:
+          type: string
+          description: The user's username or subject ID.
+        picture:
+          type: string
+          description: URL to the user's profile picture.
+        authorities:
+          type: array
+          items:
+            type: string
+          description: List of granted authorities/roles.
+
     DashboardSummary:
       type: object
       description: Aggregated statistics and recent activity for the system dashboard.

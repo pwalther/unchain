@@ -229,6 +229,7 @@ export function FeatureVariantsDialog({ open, onOpenChange, feature, onSave, con
                                                     ) : (
                                                         <Input
                                                             {...field}
+                                                            value={field.value ?? ""}
                                                             type={form.watch(`variants.${index}.payload.type`) === 'number' ? 'number' : 'text'}
                                                             placeholder={form.watch(`variants.${index}.payload.type`) === 'json' ? '{"key": "value"}' : 'Enter payload value'}
                                                             className="h-10 bg-background/50"
@@ -246,7 +247,12 @@ export function FeatureVariantsDialog({ open, onOpenChange, feature, onSave, con
                                 type="button"
                                 variant="outline"
                                 className="w-full border-dashed gap-2"
-                                onClick={() => append({ name: "", weight: 0, stickiness: "default", payload: null })}
+                                onClick={() => append({
+                                    name: "",
+                                    weight: 0,
+                                    stickiness: "default",
+                                    payload: { type: "string", value: "" }
+                                })}
                             >
                                 <Plus className="h-4 w-4" />
                                 Add Variant
