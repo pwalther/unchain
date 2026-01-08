@@ -9,6 +9,10 @@ info:
     Change Requests, Segments, FeatureTags, and Dependencies.
 
     **Base URL**: `<your-unchain-instance>/api/admin`
+
+    ### ID Types
+    Most resources (Projects, Features, Environments) use **String** identifiers, which are typically URL-friendly slugs (e.g., `my-project`).
+    Some resources (Segments, Change Requests) use **Integer** IDs, which are auto-generated sequences.
   version: 4.0.0
   contact:
     name: Philipp Walther
@@ -74,6 +78,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
     post:
       summary: Create a new project
       operationId: createProject
@@ -98,12 +104,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
         "409":
-          description: Conflict. A project with this name already exists.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+          $ref: "#/components/responses/ConflictError"
 
   /projects/{projectId}:
     get:
@@ -120,6 +128,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Project"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
     put:
       operationId: updateProject
       x-required-permissions: [PROJECT_UPDATE]
@@ -136,6 +150,14 @@ paths:
       responses:
         "200":
           description: Project updated
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
     delete:
       operationId: deleteProject
       x-required-permissions: [PROJECT_DELETE]
@@ -146,6 +168,12 @@ paths:
       responses:
         "200":
           description: Project deleted
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
   /projects/{projectId}/features:
     get:
@@ -167,6 +195,12 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Feature"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
     post:
       operationId: createFeature
       x-required-permissions: [FEATURE_CREATE]
@@ -187,12 +221,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Feature"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
         "409":
-          description: Conflict. A feature with this name already exists.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+          $ref: "#/components/responses/ConflictError"
 
   /projects/{projectId}/features/{featureName}:
     get:
@@ -210,6 +248,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Feature"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
     patch:
       operationId: updateFeature
       summary: Update a feature toggle
@@ -226,6 +270,14 @@ paths:
       responses:
         "200":
           description: Feature updated
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
     delete:
       operationId: deleteFeature
       x-required-permissions: [FEATURE_DELETE]
@@ -237,6 +289,12 @@ paths:
       responses:
         "200":
           description: Feature archived successfully
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
   # =========================================================================
   # FEATURE STRATEGIES & ENVIRONMENTS
@@ -249,12 +307,12 @@ paths:
       description: |-
         Uses the details provided in the payload to create a new environment
       requestBody:
-        description: createEnvironmentSchema
+        description: CreateEnvironmentRequest
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/createEnvironmentSchema"
+              $ref: "#/components/schemas/CreateEnvironmentRequest"
       responses:
         "201":
           description: The resource was successfully created.
@@ -267,59 +325,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/environmentSchema"
-        "409":
-          description: Conflict. An environment with this name already exists.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
+                $ref: "#/components/schemas/Environment"
         "400":
-          description: The request data does not match what we expect.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: ValidationError
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      The request payload you provided doesn't conform to the schema. The
-                      .parameters property should be object. You sent [].
+          $ref: "#/components/responses/BadRequestError"
         "401":
-          description:
-            Authorization information is missing or invalid. Provide a valid
-            API token as the `authorization` header, e.g.
-            `authorization:*.*.my-admin-token`.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: AuthenticationRequired
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      You must log in to use . Your request had no authorization
-                      header, so we could not authorize you. Try logging in at
-                      /auth/simple/login.
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
       tags:
         - Environments
     get:
@@ -329,11 +341,11 @@ paths:
       description: Retrieves all environments that exist in this  instance.
       responses:
         "200":
-          description: environmentsSchema
+          description: EnvironmentList
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/environmentsSchema"
+                $ref: "#/components/schemas/EnvironmentList"
         "401":
           description:
             Authorization information is missing or invalid. Provide a valid
@@ -397,71 +409,25 @@ paths:
         payload. Note that `name`, `enabled` and `protected` cannot be changed
         by this API
       parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/environmentName"
       requestBody:
-        description: updateEnvironmentSchema
+        description: UpdateEnvironmentRequest
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/updateEnvironmentSchema"
+              $ref: "#/components/schemas/UpdateEnvironmentRequest"
       responses:
         "200":
           description: environmentSchema
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/environmentSchema"
+                $ref: "#/components/schemas/Environment"
         "400":
-          description: The request data does not match what we expect.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: ValidationError
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      The request payload you provided doesn't conform to the schema. The
-                      .parameters property should be object. You sent [].
+          $ref: "#/components/responses/BadRequestError"
         "401":
-          description:
-            Authorization information is missing or invalid. Provide a valid
-            API token as the `authorization` header, e.g.
-            `authorization:*.*.my-admin-token`.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: AuthenticationRequired
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      You must log in to use . Your request had no authorization
-                      header, so we could not authorize you. Try logging in at
-                      /auth/simple/login.
+          $ref: "#/components/responses/UnauthorizedError"
       tags:
         - Environments
   /environments/{name}:
@@ -476,60 +442,14 @@ paths:
         Given an existing environment by name, this endpoint will attempt to
         delete it
       parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/environmentName"
       responses:
         "200":
           description: This response has no body.
         "400":
-          description: The request data does not match what we expect.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: ValidationError
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      The request payload you provided doesn't conform to the schema. The
-                      .parameters property should be object. You sent [].
+          $ref: "#/components/responses/BadRequestError"
         "401":
-          description:
-            Authorization information is missing or invalid. Provide a valid
-            API token as the `authorization` header, e.g.
-            `authorization:*.*.my-admin-token`.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: AuthenticationRequired
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      You must log in to use . Your request had no authorization
-                      header, so we could not authorize you. Try logging in at
-                      /auth/simple/login.
+          $ref: "#/components/responses/UnauthorizedError"
       tags:
         - Environments
     get:
@@ -539,43 +459,16 @@ paths:
       description: Retrieves the environment with `name` if it exists in this
         instance
       parameters:
-        - name: name
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: "#/components/parameters/environmentName"
       responses:
         "200":
           description: environmentSchema
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/environmentSchema"
+                $ref: "#/components/schemas/Environment"
         "401":
-          description:
-            Authorization information is missing or invalid. Provide a valid
-            API token as the `authorization` header, e.g.
-            `authorization:*.*.my-admin-token`.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    description: The ID of the error instance
-                    type: string
-                    example: 9c40958a-daac-400e-98fb-3bb438567008
-                  name:
-                    description: The name of the error kind
-                    type: string
-                    example: AuthenticationRequired
-                  message:
-                    description: A description of what went wrong.
-                    type: string
-                    example:
-                      You must log in to use . Your request had no authorization
-                      header, so we could not authorize you. Try logging in at
-                      /auth/simple/login.
+          $ref: "#/components/responses/UnauthorizedError"
         "403":
           description:
             The provided user credentials are valid, but the user does not have
@@ -1317,6 +1210,38 @@ paths:
 # COMPONENTS
 # =========================================================================
 components:
+  responses:
+    UnauthorizedError:
+      description: Authorization information is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ForbiddenError:
+      description: The user does not have necessary permissions to perform this operation.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFoundError:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    BadRequestError:
+      description: The request data does not match what we expect.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ConflictError:
+      description: The resource already exists.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
   securitySchemes:
     OidcAuth:
       type: openIdConnect
@@ -1358,6 +1283,20 @@ components:
       schema:
         type: integer
       description: The ID of the segment
+    environmentName:
+      name: name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The name of the environment
+    parentFeature:
+      name: parentFeature
+      in: path
+      required: true
+      schema:
+        type: string
+      description: The name of the parent feature
 
   schemas:
     DashboardSummary:
@@ -1821,7 +1760,7 @@ components:
         description:
           type: string
 
-    createEnvironmentSchema:
+    CreateEnvironmentRequest:
       description: Data required to create a new
         [environment](/reference/environments)
       type: object
@@ -1865,7 +1804,7 @@ components:
       required:
         - name
         - type
-    environmentsSchema:
+    EnvironmentList:
       description: A versioned list of environments
       type: object
       properties:
@@ -1877,12 +1816,12 @@ components:
           description: List of environments
           type: array
           items:
-            $ref: "#/components/schemas/environmentSchema"
+            $ref: "#/components/schemas/Environment"
       additionalProperties: true
       required:
         - version
         - environments
-    environmentSchema:
+    Environment:
       description: A definition of the project environment
       type: object
       properties:
@@ -1941,7 +1880,7 @@ components:
         - enabled
         - protected
         - sortOrder
-    updateEnvironmentSchema:
+    UpdateEnvironmentRequest:
       description: Data used to update an
         [environment](/reference/environments).
       type: object

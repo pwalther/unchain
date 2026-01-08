@@ -17,10 +17,10 @@
 package ch.redmoon.unchain.controller;
 
 import ch.redmoon.unchain.api.EnvironmentsApi;
-import ch.redmoon.unchain.api.model.EnvironmentSchema;
-import ch.redmoon.unchain.api.model.EnvironmentsSchema;
-import ch.redmoon.unchain.api.model.UpdateEnvironmentSchema;
-import ch.redmoon.unchain.api.model.CreateEnvironmentSchema;
+import ch.redmoon.unchain.api.model.Environment;
+import ch.redmoon.unchain.api.model.EnvironmentList;
+import ch.redmoon.unchain.api.model.UpdateEnvironmentRequest;
+import ch.redmoon.unchain.api.model.CreateEnvironmentRequest;
 import ch.redmoon.unchain.entity.ChangeRequestState;
 import ch.redmoon.unchain.entity.EnvironmentEntity;
 import ch.redmoon.unchain.repository.EnvironmentRepository;
@@ -47,36 +47,36 @@ public class EnvironmentsController implements EnvironmentsApi {
     private final ch.redmoon.unchain.repository.ChangeRequestRepository changeRequestRepository;
 
     @Override
-    public ResponseEntity<EnvironmentsSchema> getAllEnvironments() {
-        List<EnvironmentSchema> dtos = environmentRepository.findAll().stream()
+    public ResponseEntity<EnvironmentList> getAllEnvironments() {
+        List<Environment> dtos = environmentRepository.findAll().stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
 
-        EnvironmentsSchema response = new EnvironmentsSchema();
+        EnvironmentList response = new EnvironmentList();
         response.setEnvironments(dtos);
 
         return ResponseEntity.ok(response);
     }
 
     @Override
-    public ResponseEntity<EnvironmentSchema> createEnvironment(CreateEnvironmentSchema createEnvironmentSchema) {
-        if (environmentRepository.existsById(createEnvironmentSchema.getName())) {
+    public ResponseEntity<Environment> createEnvironment(CreateEnvironmentRequest createEnvironmentRequest) {
+        if (environmentRepository.existsById(createEnvironmentRequest.getName())) {
             throw new BusinessRuleViolationException(
-                    "Environment '" + createEnvironmentSchema.getName() + "' already exists.");
+                    "Environment '" + createEnvironmentRequest.getName() + "' already exists.");
         }
         EnvironmentEntity entity = new EnvironmentEntity();
-        entity.setName(createEnvironmentSchema.getName());
-        entity.setType(createEnvironmentSchema.getType());
-        entity.setEnabled(Boolean.TRUE.equals(createEnvironmentSchema.getEnabled()));
-        entity.setSortOrder(createEnvironmentSchema.getSortOrder());
-        entity.setRequiredApprovals(createEnvironmentSchema.getRequiredApprovals());
+        entity.setName(createEnvironmentRequest.getName());
+        entity.setType(createEnvironmentRequest.getType());
+        entity.setEnabled(Boolean.TRUE.equals(createEnvironmentRequest.getEnabled()));
+        entity.setSortOrder(createEnvironmentRequest.getSortOrder());
+        entity.setRequiredApprovals(createEnvironmentRequest.getRequiredApprovals());
 
         EnvironmentEntity saved = environmentRepository.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED).body(mapToDto(saved));
     }
 
     @Override
-    public ResponseEntity<EnvironmentSchema> getEnvironment(String name) {
+    public ResponseEntity<Environment> getEnvironment(String name) {
         return environmentRepository.findById(name)
                 .map(this::mapToDto)
                 .map(ResponseEntity::ok)
@@ -84,16 +84,16 @@ public class EnvironmentsController implements EnvironmentsApi {
     }
 
     @Override
-    public ResponseEntity<EnvironmentSchema> updateEnvironment(String name,
-            UpdateEnvironmentSchema updateEnvironmentSchema) {
+    public ResponseEntity<Environment> updateEnvironment(String name,
+            UpdateEnvironmentRequest updateEnvironmentRequest) {
         return environmentRepository.findById(name)
                 .map(entity -> {
-                    if (updateEnvironmentSchema.getType() != null)
-                        entity.setType(updateEnvironmentSchema.getType());
-                    if (updateEnvironmentSchema.getSortOrder() != null)
-                        entity.setSortOrder(updateEnvironmentSchema.getSortOrder());
-                    if (updateEnvironmentSchema.getRequiredApprovals() != null)
-                        entity.setRequiredApprovals(updateEnvironmentSchema.getRequiredApprovals());
+                    if (updateEnvironmentRequest.getType() != null)
+                        entity.setType(updateEnvironmentRequest.getType());
+                    if (updateEnvironmentRequest.getSortOrder() != null)
+                        entity.setSortOrder(updateEnvironmentRequest.getSortOrder());
+                    if (updateEnvironmentRequest.getRequiredApprovals() != null)
+                        entity.setRequiredApprovals(updateEnvironmentRequest.getRequiredApprovals());
 
                     EnvironmentEntity saved = environmentRepository.save(entity);
                     return ResponseEntity.ok(mapToDto(saved));
@@ -116,13 +116,14 @@ public class EnvironmentsController implements EnvironmentsApi {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    private EnvironmentSchema mapToDto(EnvironmentEntity entity) {
-        EnvironmentSchema dto = new EnvironmentSchema();
+    private Environment mapToDto(EnvironmentEntity entity) {
+        Environment dto = new Environment();
         dto.setName(entity.getName());
         dto.setType(entity.getType());
         dto.setEnabled(entity.isEnabled());
         dto.setSortOrder(entity.getSortOrder());
         dto.setRequiredApprovals(entity.getRequiredApprovals());
+        dto.setProtected(entity.getRequiredApprovals() != null && entity.getRequiredApprovals() > 0);
 
         long featureCount = featureRepository.countByEnvironmentsName(entity.getName());
         dto.setEnabledToggleCount((int) featureCount);

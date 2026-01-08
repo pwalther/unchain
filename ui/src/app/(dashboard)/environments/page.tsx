@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
-import { Globe, BadgeCheck, ShieldAlert, Plus } from "lucide-react"
+import { Globe, BadgeCheck, ShieldAlert, Plus, Lock, LockOpen } from "lucide-react"
 import { ColumnDef } from "@tanstack/react-table"
 
 import { Button } from "@/components/ui/button"
@@ -71,12 +71,15 @@ export default function EnvironmentsPage() {
         {
             accessorKey: "protected",
             header: "Protection",
-            cell: ({ row }) => (
-                <Badge variant={row.getValue("protected") ? "secondary" : "outline"}>
-                    {row.getValue("protected") ? "Protected" : "None"}
-                </Badge>
-
-            ),
+            cell: ({ row }) => {
+                const isProtected = row.getValue("protected")
+                return (
+                    <Badge variant={isProtected ? "secondary" : "outline"} className="gap-1">
+                        {isProtected ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />}
+                        {isProtected ? "Protected" : "None"}
+                    </Badge>
+                )
+            },
         },
         {
             accessorKey: "enabledToggleCount",
@@ -88,16 +91,7 @@ export default function EnvironmentsPage() {
                 </div>
             ),
         },
-        {
-            accessorKey: "projectCount",
-            header: "Project Usage",
-            cell: ({ row }) => (
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{row.getValue("projectCount")}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">Projects</span>
-                </div>
-            ),
-        },
+
     ]
 
     return (
