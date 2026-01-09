@@ -1,0 +1,18 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          oidc:
+            client-id: ${OIDC_CLIENT_ID:unchain}
+            client-secret: ${OIDC_CLIENT_SECRET:PBC9LOputGatFfVUzMMFJbWttmHe8zFc}
+            scope: openid, profile, email
+            redirect-uri: "https://192.168.1.36:8888/login/oauth2/code/{registrationId}"
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+        provider:
+          oidc:
+            issuer-uri: ${OIDC_ISSUER_URI:https://server.redmoon.ch/auth/oidc}
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:https://server.redmoon.ch/auth/oidc}

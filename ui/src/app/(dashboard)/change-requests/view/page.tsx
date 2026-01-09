@@ -143,11 +143,11 @@ function ChangeRequestDetailContent() {
                                 {request.state}
                             </Badge>
                         </div>
-                        <p className="text-muted-foreground flex items-center gap-2">
+                        <div className="text-muted-foreground flex items-center gap-2">
                             <span className="font-bold uppercase tracking-widest text-xs">CR-{request.id}</span>
                             <Separator orientation="vertical" className="h-3" />
                             <span className="text-sm italic">Created by {request.createdBy.username}</span>
-                        </p>
+                        </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
