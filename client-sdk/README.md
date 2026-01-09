@@ -39,3 +39,31 @@ UnchainConfig config = UnchainConfig.builder()
 
 UnchainClient client = new UnchainClient(config);
 ```
+
+## OpenFeature Support
+
+Unchain supports the [OpenFeature](https://openfeature.dev) standard. You can use the `UnchainFeatureProvider` adapter to use the OpenFeature Java SDK with Unchain as the backend.
+
+### Setup
+
+```java
+import dev.openfeature.sdk.OpenFeatureAPI;
+import dev.openfeature.sdk.Client;
+import ch.redmoon.unchain.client.provider.UnchainFeatureProvider;
+
+// 1. Initialize Unchain Client
+UnchainConfig config = UnchainConfig.builder()...build();
+UnchainClient unchainClient = new UnchainClient(config);
+
+// 2. Register the Provider
+OpenFeatureAPI.getInstance().setProvider(new UnchainFeatureProvider(unchainClient));
+
+// 3. Use the OpenFeature Client
+Client client = OpenFeatureAPI.getInstance().getClient();
+```
+
+### Supported Features
+- **Boolean Evaluation:** Maps to Unchain `isEnabled`.
+- **String/Number Evaluation:** Maps to Unchain `getVariant` payload values.
+- **Context Mapping:** `EvaluationContext` attributes are automatically mapped to Unchain context properties.
+- **Hooks:** Full support for OpenFeature Hooks.

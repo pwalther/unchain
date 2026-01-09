@@ -34,11 +34,24 @@
         </dependency>
 
         <!-- Hashing for Gradual Rollout -->
-        <!-- Hashing for Gradual Rollout -->
         <dependency>
             <groupId>com.sangupta</groupId>
             <artifactId>murmur</artifactId>
             <version>1.0.0</version>
+        </dependency>
+
+        <!-- ByteBuddy - Explicitly newer version for Java 25 support -->
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>1.17.5</version>
+        </dependency>
+
+        <!-- OpenFeature SDK -->
+        <dependency>
+            <groupId>dev.openfeature</groupId>
+            <artifactId>sdk</artifactId>
+            <version>1.14.0</version>
         </dependency>
 
         <!-- Lombok -->
@@ -64,13 +77,13 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.8.0</version>
+            <version>5.20.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.8.0</version>
+            <version>5.20.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

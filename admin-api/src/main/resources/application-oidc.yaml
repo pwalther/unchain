@@ -5,8 +5,10 @@ spring:
         registration:
           oidc:
             client-id: ${OIDC_CLIENT_ID:unchain}
+            # sample data (not a real secret) - replace with your own
             client-secret: ${OIDC_CLIENT_SECRET:PBC9LOputGatFfVUzMMFJbWttmHe8zFc}
             scope: openid, profile, email
+            # sample data (not a real redirect URI) - replace with your own
             redirect-uri: "https://192.168.1.36:8888/login/oauth2/code/{registrationId}"
             client-authentication-method: client_secret_basic
             authorization-grant-type: authorization_code
@@ -16,3 +18,9 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI:https://server.redmoon.ch/auth/oidc}
+
+unchain:
+  security:
+    oauth2:
+      base-uri: /login/oauth2/code/oidc
+      success-url: ${OAUTH2_SUCCESS_URL:https://192.168.1.36:3333}

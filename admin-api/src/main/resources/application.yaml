@@ -50,9 +50,6 @@ unchain:
     stale-check-cron: "0 0 3 * * *"
   security:
     authorization-provider-class: ch.redmoon.unchain.security.TrustAllAuthorizationProvider
-    oauth2:
-      base-uri: /login/oauth2/code/oidc
-      success-url: https://192.168.1.36:3333
     cors:
       allowed-origins: "http://localhost:3000, https://server.redmoon.ch, https://192.168.1.36:3333"
 

@@ -1,4 +1,4 @@
-export const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "https://192.168.1.36:8888";
+export const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
 
 export class ApiError extends Error {
     status: number;

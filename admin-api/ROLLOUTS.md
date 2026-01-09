@@ -10,7 +10,7 @@ We achieve this using deterministic hashing. We do not store "state" for every u
 
 ## 2. The Hashing Algorithm: MurmurHash3
 
-We use **MurmurHash3 (32-bit, x86 variant)** as our hashing function.
+We currently use **MurmurHash3 (32-bit, x86 variant)** as our hashing function. This is subject to change in the future (platform, language, etc.).
 
 ### Why MurmurHash?
 1.  **Speed**: It is extremely fast to compute, adding negligible overhead to flag evaluation.
