@@ -137,44 +137,8 @@
 				</executions>
 				<configuration>
 					<scripts>
-						<script><![CDATA[
-import org.yaml.snakeyaml.Yaml
-import java.io.File
-
-def yamlFile = new File(project.basedir, 'src/main/resources/api/openapi.yaml')
-if (yamlFile.exists()) {
-    def yaml = new Yaml()
-    def data = yaml.load(yamlFile.text)
-    def outputDir = new File(project.build.directory, 'generated-sources/custom-security/ch/redmoon/unchain/security')
-    outputDir.mkdirs()
-
-    def sb = new StringBuilder()
-    sb.append('package ch.redmoon.unchain.security;\n\n')
-    sb.append('import java.util.List;\n')
-    sb.append('import java.util.Map;\n')
-    sb.append('import java.util.HashMap;\n\n')
-    sb.append('public class GeneratedApiMetadata {\n')
-    sb.append('    public static final Map<String, List<String>> PERMISSION_MAP = new HashMap<>();\n\n')
-    sb.append('    static {\n')
-
-    if (data.paths) {
-        data.paths.each { path, methods ->
-            methods.each { method, op ->
-                if (op instanceof Map && op['x-required-permissions']) {
-                    def perms = op['x-required-permissions'].collect { '"' + it + '"' }.join(', ')
-                    sb.append('        PERMISSION_MAP.put("' + method.toUpperCase() + ':' + path + '", List.of(' + perms + '));\n')
-                }
-            }
-        }
-    }
-
-    sb.append('    }\n')
-    sb.append('}\n')
-
-    new File(outputDir, 'GeneratedApiMetadata.java').text = sb.toString()
-    project.addCompileSourceRoot(new File(project.build.directory, 'generated-sources/custom-security').absolutePath)
-}
-                        ]]></script>
+						<script>
+							file:///${project.basedir}/build-scripts/generate-security-metadata.groovy</script>
 					</scripts>
 				</configuration>
 				<dependencies>
@@ -228,6 +192,7 @@ if (yamlFile.exists()) {
 						<configuration>
 							<inputSpec>${project.basedir}/src/main/resources/api/openapi.yaml</inputSpec>
 							<generatorName>spring</generatorName>
+							<generateSupportingFiles>false</generateSupportingFiles>
 							<apiPackage>ch.redmoon.unchain.api</apiPackage>
 							<modelPackage>ch.redmoon.unchain.api.model</modelPackage>
 							<configOptions>
@@ -238,8 +203,44 @@ if (yamlFile.exists()) {
 								<skipDefaultInterface>true</skipDefaultInterface>
 								<useSpringBoot3>true</useSpringBoot3>
 								<modelNameSuffix>Model</modelNameSuffix>
+								<skipOperationExample>true</skipOperationExample>
 							</configOptions>
 						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.github.spotbugs</groupId>
+				<artifactId>spotbugs-maven-plugin</artifactId>
+				<version>4.9.0.0</version>
+				<dependencies>
+					<dependency>
+						<groupId>com.github.spotbugs</groupId>
+						<artifactId>spotbugs</artifactId>
+						<version>4.9.8</version>
+					</dependency>
+					<dependency>
+						<groupId>org.ow2.asm</groupId>
+						<artifactId>asm</artifactId>
+						<version>9.9</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<plugins>
+						<plugin>
+							<groupId>com.h3xstream.findsecbugs</groupId>
+							<artifactId>findsecbugs-plugin</artifactId>
+							<version>1.14.0</version>
+						</plugin>
+					</plugins>
+				</configuration>
+				<executions>
+					<execution>
+						<id>scan</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>
