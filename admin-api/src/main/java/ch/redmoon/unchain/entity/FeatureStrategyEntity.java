@@ -41,6 +41,9 @@ import java.util.List;
 @AllArgsConstructor
 public class FeatureStrategyEntity {
 
+    @jakarta.persistence.Transient
+    private boolean skipAudit;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

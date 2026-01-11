@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-audit-log-fields
+      author: phil
+      changes:
+        - addColumn:
+            tableName: audit_log
+            columns:
+              - column:
+                  name: project_id
+                  type: VARCHAR(255)
+              - column:
+                  name: environment
+                  type: VARCHAR(255)
+              - column:
+                  name: feature_name
+                  type: VARCHAR(255)

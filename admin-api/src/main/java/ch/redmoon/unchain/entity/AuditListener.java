@@ -56,13 +56,42 @@ public class AuditListener {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AuditListener.class);
 
-    private void logAudit(Object entity, String action) {
+    private static final ThreadLocal<Boolean> SKIP_AUDIT = ThreadLocal.withInitial(() -> false);
+
+    public static void suspendAudit(Runnable action) {
+        SKIP_AUDIT.set(true);
         try {
+            action.run();
+        } finally {
+            SKIP_AUDIT.remove();
+        }
+    }
+
+    private void logAudit(Object entity, String action) {
+        if (Boolean.TRUE.equals(SKIP_AUDIT.get())) {
+            return;
+        }
+
+        try {
+            // Check for skipAudit flag
+            try {
+                Field skipAuditField = entity.getClass().getDeclaredField("skipAudit");
+                skipAuditField.setAccessible(true);
+                if (skipAuditField.getBoolean(entity)) {
+                    return;
+                }
+            } catch (NoSuchFieldException e) {
+                // Ignore if field doesn't exist
+            }
+
             AuditLogService auditLogService = BeanUtil.getBean(AuditLogService.class);
 
             String entityType = entity.getClass().getSimpleName();
             String entityId = getEntityId(entity);
             String data = null;
+            String projectId = null;
+            String environment = null;
+            String featureName = null;
 
             try {
                 // Simplified serialization to avoid recursion and lazy loading issues
@@ -74,19 +103,49 @@ public class AuditListener {
                     summary.put("description", f.getDescription());
                     summary.put("type", f.getType());
                     summary.put("featureName", f.getName());
+                    featureName = f.getName();
                     try {
                         if (f.getProject() != null) {
                             summary.put("project", f.getProject().getId());
+                            projectId = f.getProject().getId();
                         }
                     } catch (Exception e) {
                         // Ignore if project cannot be accessed
                     }
                 } else if (entity instanceof ProjectEntity p) {
                     summary.put("name", p.getName());
+                    projectId = p.getId();
                 } else if (entity instanceof FeatureStrategyEntity fs) {
                     summary.put("featureName", fs.getFeatureName());
                     summary.put("strategyName", fs.getStrategyName());
                     summary.put("environmentName", fs.getEnvironmentName());
+                    featureName = fs.getFeatureName();
+                    environment = fs.getEnvironmentName();
+                    try {
+                        ch.redmoon.unchain.repository.FeatureRepository featureRepository = BeanUtil
+                                .getBean(ch.redmoon.unchain.repository.FeatureRepository.class);
+                        featureRepository.findById(fs.getFeatureName()).ifPresent(f -> {
+                            if (f.getProject() != null) {
+                                summary.put("project", f.getProject().getId());
+                                // We cannot assign to local variable 'projectId' from lambda, so we put it in
+                                // map
+                                // and retrieve it after, or use atomic reference.
+                                // Actually, simpler to not use lambda for assignment to local var.
+                            }
+                        });
+                        // Non-lambda approach to set the local variable 'projectId'
+                        var f = featureRepository.findById(fs.getFeatureName()).orElse(null);
+                        if (f != null && f.getProject() != null) {
+                            projectId = f.getProject().getId();
+                            summary.put("project", projectId);
+                        }
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                } else if (entity instanceof ChangeRequestEntity cr) {
+                    projectId = cr.getProjectId();
+                    environment = cr.getEnvironment();
+                    summary.put("title", cr.getTitle());
                 }
                 data = objectMapper.writeValueAsString(summary);
             } catch (Throwable e) {
@@ -100,6 +159,9 @@ public class AuditListener {
                     .data(data)
                     .changedBy(getCurrentUser())
                     .changedAt(OffsetDateTime.now())
+                    .projectId(projectId)
+                    .environment(environment)
+                    .featureName(featureName)
                     .build();
 
             auditLogService.saveAuditLog(auditLog);

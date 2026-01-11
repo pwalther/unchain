@@ -1406,6 +1406,10 @@ components:
           type: string
           description: The type of entity that was affected (e.g., FeatureEntity).
           example: "FeatureEntity"
+        displayName:
+          type: string
+          description: Human-readable display name for the entity type (e.g., "Feature").
+          example: "Feature"
         entityId:
           type: string
           description: The unique identifier of the affected entity.
@@ -1423,6 +1427,18 @@ components:
           format: date-time
           description: The timestamp when the change occurred.
           example: "2026-01-08T12:00:00Z"
+        environment:
+          type: string
+          description: The environment in which the change occurred (if applicable).
+          example: "production"
+        signatureValid:
+          type: boolean
+          description: Whether the audit log entry's cryptographic signature is valid (null if integrity checking is disabled).
+          example: true
+        chainValid:
+          type: boolean
+          description: Whether the hash chain is intact at this entry (null if integrity checking is disabled).
+          example: true
         data:
           type: string
           description: Optional JSON-encoded metadata or state at the time of the change.

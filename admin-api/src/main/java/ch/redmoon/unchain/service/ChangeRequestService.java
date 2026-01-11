@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ public class ChangeRequestService {
     private final EnvironmentRepository environmentRepository;
     private final FeatureStrategyRepository featureStrategyRepository;
     private final ObjectMapper objectMapper;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public void applyChangeRequest(Integer changeRequestId) {
@@ -56,13 +58,48 @@ public class ChangeRequestService {
         log.info("Applying change request {}: {}", changeRequestId, cr.getTitle());
 
         List<ChangeRequestChangeEntity> changes = changeRequestChangeRepository.findByChangeRequestId(changeRequestId);
+        List<Map<String, Object>> changeSummaries = new ArrayList<>();
+
         for (ChangeRequestChangeEntity change : changes) {
             applyChange(cr.getProjectId(), cr.getEnvironment(), change);
+
+            Map<String, Object> summary = new java.util.HashMap<>();
+            summary.put("action", change.getAction());
+            summary.put("feature", change.getFeatureName());
+            try {
+                if (change.getPayload() != null) {
+                    summary.put("payload", objectMapper.readValue(change.getPayload(), Map.class));
+                }
+            } catch (Exception e) {
+                summary.put("payload", change.getPayload());
+            }
+            changeSummaries.add(summary);
         }
 
         cr.setState("Applied");
         cr.setAppliedAt(java.time.OffsetDateTime.now());
         changeRequestRepository.save(cr);
+
+        // Manually log the summary audit log
+        try {
+            AuditLogEntity auditLog = AuditLogEntity.builder()
+                    .entityType("ChangeRequestEntity")
+                    .entityId(String.valueOf(changeRequestId))
+                    .action("APPLIED")
+                    .data(objectMapper.writeValueAsString(changeSummaries))
+                    .changedBy(SecurityContextHolder.getContext().getAuthentication() != null
+                            ? SecurityContextHolder.getContext().getAuthentication().getName()
+                            : "system")
+                    .changedAt(java.time.OffsetDateTime.now())
+                    .projectId(cr.getProjectId())
+                    .environment(cr.getEnvironment())
+                    .build();
+
+            auditLogService.saveAuditLog(auditLog);
+        } catch (Exception e) {
+            log.error("Failed to create summary audit log for CR {}", changeRequestId, e);
+        }
+
         log.info("Change request {} applied successfully", changeRequestId);
     }
 
@@ -122,11 +159,13 @@ public class ChangeRequestService {
             defaultStrategy.setFeatureName(feature.getName());
             defaultStrategy.setEnvironmentName(env.getName());
             defaultStrategy.setStrategyName("default");
+            defaultStrategy.setSkipAudit(true);
             featureStrategyRepository.save(defaultStrategy);
         }
 
         if (!feature.getEnvironments().contains(env)) {
             feature.getEnvironments().add(env);
+            feature.setSkipAudit(true);
             featureRepository.save(feature);
         }
     }
@@ -134,6 +173,7 @@ public class ChangeRequestService {
     private void disableFeature(FeatureEntity feature, EnvironmentEntity env) {
         if (feature.getEnvironments().contains(env)) {
             feature.getEnvironments().remove(env);
+            feature.setSkipAudit(true);
             featureRepository.save(feature);
         }
     }
@@ -146,6 +186,7 @@ public class ChangeRequestService {
         featureStrategy.setFeatureName(feature.getName());
         featureStrategy.setEnvironmentName(env.getName());
         featureStrategy.setStrategyName((String) payload.get("name"));
+        featureStrategy.setSkipAudit(true);
 
         // Handle constraints
         if (payload.get("constraints") != null) {
@@ -215,6 +256,8 @@ public class ChangeRequestService {
                     + " in env " + env.getName());
         }
 
+        featureStrategy.setSkipAudit(true);
+
         // Clear existing
         featureStrategy.getConstraints().clear();
         if (payload.get("constraints") != null) {
@@ -270,11 +313,18 @@ public class ChangeRequestService {
             throw new RuntimeException("Strategy ID missing in delete-strategy payload");
         }
         Integer strategyId = Integer.parseInt(idObj.toString());
-        featureStrategyRepository.deleteById(strategyId);
+
+        // Fetch to set skipAudit before delete
+        FeatureStrategyEntity strategy = featureStrategyRepository.findById(strategyId).orElse(null);
+        if (strategy != null) {
+            strategy.setSkipAudit(true);
+            featureStrategyRepository.delete(strategy);
+        }
     }
 
     private void archiveFeature(FeatureEntity feature) {
         // In this implementation, archiving a feature means deleting it.
+        feature.setSkipAudit(true);
         featureRepository.delete(feature);
     }
 }

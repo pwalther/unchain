@@ -253,6 +253,7 @@ function FeaturesPageContent() {
 
             <CreateFeatureDrawer
                 projectId={selectedProjectId}
+                projects={projects}
                 open={drawerOpen}
                 onOpenChange={setDrawerOpen}
                 onSuccess={() => {

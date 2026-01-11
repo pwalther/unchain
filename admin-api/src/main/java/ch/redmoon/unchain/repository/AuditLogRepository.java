@@ -22,10 +22,36 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLogEntity, Long> {
-    long deleteByChangedAtBefore(java.time.OffsetDateTime threshold);
+        long deleteByChangedAtBefore(java.time.OffsetDateTime threshold);
 
-    java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findTop10ByEntityTypeOrderByChangedAtDesc(
-            String entityType);
+        java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findTop10ByEntityTypeOrderByChangedAtDesc(
+                        String entityType);
 
-    java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findTop10ByOrderByChangedAtDesc();
+        java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findTop10ByOrderByChangedAtDesc();
+
+        @org.springframework.data.jpa.repository.Query("SELECT a FROM AuditLogEntity a WHERE " +
+                        "(:projectId IS NULL OR a.projectId = :projectId) AND " +
+                        "(:environment IS NULL OR a.environment = :environment) AND " +
+                        "(:featureName IS NULL OR a.featureName = :featureName) AND " +
+                        "a.changedAt BETWEEN :from AND :to " +
+                        "ORDER BY a.changedAt DESC")
+        java.util.List<ch.redmoon.unchain.entity.AuditLogEntity> findHistory(
+                        @org.springframework.data.repository.query.Param("projectId") String projectId,
+                        @org.springframework.data.repository.query.Param("environment") String environment,
+                        @org.springframework.data.repository.query.Param("featureName") String featureName,
+                        @org.springframework.data.repository.query.Param("from") java.time.OffsetDateTime from,
+                        @org.springframework.data.repository.query.Param("to") java.time.OffsetDateTime to);
+
+        /**
+         * Finds the oldest audit log entry after the given date (for chain anchoring
+         * during housekeeping).
+         */
+        java.util.Optional<ch.redmoon.unchain.entity.AuditLogEntity> findFirstByChangedAtAfterOrderByChangedAtAsc(
+                        java.time.OffsetDateTime after);
+
+        /**
+         * Finds the most recent audit log entry (for getting the last hash in the
+         * chain).
+         */
+        java.util.Optional<ch.redmoon.unchain.entity.AuditLogEntity> findFirstByOrderByChangedAtDesc();
 }

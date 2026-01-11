@@ -10,8 +10,7 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetFooter,
-    SheetClose
+    SheetFooter
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -253,9 +252,7 @@ export function StrategyDetailsDrawer({
                             <Button onClick={handleSave} className="flex-1">Save Changes</Button>
                         </div>
                     ) : (
-                        <SheetClose asChild>
-                            <Button variant="outline" className="w-full">Close</Button>
-                        </SheetClose>
+                        <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>Close</Button>
                     )}
                 </SheetFooter>
             </SheetContent>

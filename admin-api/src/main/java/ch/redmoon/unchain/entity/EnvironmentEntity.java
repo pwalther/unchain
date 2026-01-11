@@ -20,14 +20,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
+
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 @Entity
 @Table(name = "environment")
-@EntityListeners(AuditListener.class)
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

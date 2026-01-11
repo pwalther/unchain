@@ -35,16 +35,19 @@ public class HousekeepingScheduler {
     private final AuditLogRepository auditLogRepository;
     private final int retentionPeriodMonths;
     private final int auditLogRetentionYears;
+    private final ch.redmoon.unchain.service.AuditLogIntegrityService integrityService;
 
     public HousekeepingScheduler(
             ChangeRequestRepository changeRequestRepository,
             AuditLogRepository auditLogRepository,
             @Value("${unchain.housekeeping.retention-period-months:1}") int retentionPeriodMonths,
-            @Value("${unchain.housekeeping.audit-log-retention-years:1}") int auditLogRetentionYears) {
+            @Value("${unchain.housekeeping.audit-log-retention-years:1}") int auditLogRetentionYears,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) ch.redmoon.unchain.service.AuditLogIntegrityService integrityService) {
         this.changeRequestRepository = changeRequestRepository;
         this.auditLogRepository = auditLogRepository;
         this.retentionPeriodMonths = retentionPeriodMonths;
         this.auditLogRetentionYears = auditLogRetentionYears;
+        this.integrityService = integrityService;
     }
 
     @Scheduled(cron = "${unchain.housekeeping.cron:0 0 1 * * *}") // Default: daily at 1 AM
@@ -70,6 +73,29 @@ public class HousekeepingScheduler {
 
         OffsetDateTime threshold = OffsetDateTime.now().minusYears(auditLogRetentionYears);
 
+        // If integrity checking is enabled, anchor the chain before deletion
+        if (integrityService != null && integrityService.isEnabled()) {
+            log.debug("Anchoring hash chain before audit log deletion");
+
+            // Find the oldest entry that will remain after cleanup
+            java.util.Optional<ch.redmoon.unchain.entity.AuditLogEntity> newChainStart = auditLogRepository
+                    .findFirstByChangedAtAfterOrderByChangedAtAsc(threshold);
+
+            if (newChainStart.isPresent()) {
+                // Anchor the chain: reset previousHash and recompute signature
+                ch.redmoon.unchain.entity.AuditLogEntity anchor = newChainStart.get();
+                anchor.setPreviousHash(null);
+                String newSignature = integrityService.computeSignature(anchor, null);
+                anchor.setSignature(newSignature);
+                auditLogRepository.save(anchor);
+
+                log.info("Anchored hash chain at audit log ID {} before deletion", anchor.getId());
+            } else {
+                log.debug("No audit logs will remain after cleanup, no anchoring needed");
+            }
+        }
+
+        // Delete old entries
         long deletedCount = auditLogRepository.deleteByChangedAtBefore(threshold);
 
         log.info("Housekeeping finished: deleted {} audit log entries", deletedCount);

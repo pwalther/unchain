@@ -17,7 +17,6 @@ import static org.hamcrest.Matchers.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @org.springframework.test.context.ActiveProfiles("demo")
-@org.springframework.context.annotation.Import(TestSecurityConfig.class)
 class AdditionalControllersIntegrationTest {
 
         @LocalServerPort

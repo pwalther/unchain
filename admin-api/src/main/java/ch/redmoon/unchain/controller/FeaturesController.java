@@ -245,8 +245,10 @@ public class FeaturesController implements FeaturesApi {
             }
 
             if (!feature.getEnvironments().contains(env)) {
-                feature.getEnvironments().add(env);
-                featureRepository.save(feature);
+                ch.redmoon.unchain.entity.AuditListener.suspendAudit(() -> {
+                    feature.getEnvironments().add(env);
+                    featureRepository.save(feature);
+                });
                 eventPublisher.publishFeatureEnabled(projectId, featureName, environment);
             }
             return ResponseEntity.ok().build();
@@ -271,8 +273,10 @@ public class FeaturesController implements FeaturesApi {
             }
 
             if (feature.getEnvironments().contains(env)) {
-                feature.getEnvironments().remove(env);
-                featureRepository.save(feature);
+                ch.redmoon.unchain.entity.AuditListener.suspendAudit(() -> {
+                    feature.getEnvironments().remove(env);
+                    featureRepository.save(feature);
+                });
                 eventPublisher.publishFeatureDisabled(projectId, featureName, environment);
             }
             return ResponseEntity.ok().build();

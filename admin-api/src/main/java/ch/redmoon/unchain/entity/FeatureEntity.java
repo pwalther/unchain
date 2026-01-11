@@ -42,6 +42,9 @@ import java.util.List;
 @AllArgsConstructor
 public class FeatureEntity {
 
+    @jakarta.persistence.Transient
+    private boolean skipAudit;
+
     @Id
     private String name;
 

@@ -54,8 +54,14 @@ databaseChangeLog:
                   file: changes/018-create-audit-log.yaml
                   relativeToChangelogFile: true
         - include:
+                  file: changes/019-audit-log-fields.yaml
+                  relativeToChangelogFile: true
+        - include:
                   file: changes/019-add-variants.yaml
                   relativeToChangelogFile: true
         - include:
                   file: changes/020-create-metrics-table.yaml
+                  relativeToChangelogFile: true
+        - include:
+                  file: changes/020-audit-log-integrity.yaml
                   relativeToChangelogFile: true

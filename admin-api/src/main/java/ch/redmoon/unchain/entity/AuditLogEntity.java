@@ -47,10 +47,25 @@ public class AuditLogEntity {
     @Column(name = "changed_by")
     private String changedBy;
 
+    @Column(name = "project_id")
+    private String projectId;
+
+    @Column(name = "environment")
+    private String environment;
+
+    @Column(name = "feature_name")
+    private String featureName;
+
     @Column(name = "changed_at", nullable = false)
     private OffsetDateTime changedAt;
 
     @Column(name = "data")
     @Lob
     private String data; // JSON representation of the entity
+
+    @Column(name = "signature", length = 512)
+    private String signature; // HMAC-SHA256 signature for integrity verification
+
+    @Column(name = "previous_hash", length = 64)
+    private String previousHash; // Hash of previous entry for chain verification
 }

@@ -32,6 +32,7 @@ const navItems = [
     { name: "Strategies", href: "/strategies", icon: Zap },
     // { name: "Segments", href: "/segments", icon: Users },
     { name: "Environments", href: "/environments", icon: Globe },
+    { name: "History", href: "/history", icon: ClipboardList },
 ]
 
 export function Sidebar() {

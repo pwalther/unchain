@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-audit-log-integrity
+      author: system
+      changes:
+        - addColumn:
+            tableName: AUDIT_LOG
+            columns:
+              - column:
+                  name: signature
+                  type: VARCHAR(512)
+                  remarks: "HMAC-SHA256 signature for integrity verification"
+              - column:
+                  name: previous_hash
+                  type: VARCHAR(64)
+                  remarks: "Hash of previous entry for chain verification"
