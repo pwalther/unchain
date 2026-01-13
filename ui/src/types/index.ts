@@ -13,6 +13,7 @@ export interface Feature {
     project: string;
     stale: boolean;
     createdAt: string;
+    lastSeenAt?: string;
     impressionData: boolean;
     environments?: FeatureEnvironment[];
     variants?: Variant[];

@@ -52,9 +52,10 @@ interface CreateFeatureDrawerProps {
     onOpenChange: (open: boolean) => void
     projectId: string
     projects: Project[]
+    onSuccess?: () => void
 }
 
-export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }: CreateFeatureDrawerProps) {
+export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects, onSuccess }: CreateFeatureDrawerProps) {
     const queryClient = useQueryClient()
     const form = useForm<FeatureFormValues>({
         resolver: zodResolver(featureSchema),
@@ -84,6 +85,7 @@ export function CreateFeatureDrawer({ open, onOpenChange, projectId, projects }:
             queryClient.invalidateQueries({ queryKey: ["environments"] })
             queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] })
             onOpenChange(false)
+            onSuccess?.()
             form.reset({
                 name: "",
                 type: "release",

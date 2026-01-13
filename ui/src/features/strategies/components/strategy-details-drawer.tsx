@@ -212,7 +212,7 @@ export function StrategyDetailsDrawer({
                                                 <div className="flex items-center space-x-2">
                                                     <Checkbox
                                                         checked={param.required}
-                                                        onCheckedChange={(checked) => updateParameter(index, 'required', checked)}
+                                                        onCheckedChange={(checked: boolean) => updateParameter(index, 'required', checked)}
                                                         id={`required-${index}`}
                                                     />
                                                     <Label htmlFor={`required-${index}`} className="text-xs font-normal">Required</Label>

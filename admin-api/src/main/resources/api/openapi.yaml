@@ -8,7 +8,7 @@ info:
     including Features, Strategies, Projects, Environments, Context Fields, 
     Change Requests, Segments, FeatureTags, and Dependencies.
 
-    **Base URL**: `<your-unchain-instance>/api/admin`
+    **Base URL**: `<your-unchain-instance>`
 
     ### ID Types
     Most resources (Projects, Features, Environments) use **String** identifiers, which are typically URL-friendly slugs (e.g., `my-project`).

@@ -455,7 +455,7 @@ function FeatureDetailsContent() {
                                                 <Switch
                                                     className="transition-all duration-300 data-[state=checked]:shadow-[0_0_12px_rgba(34,197,94,0.4)] data-[state=checked]:border-green-500/30 hover:shadow-[0_0_12px_rgba(59,130,246,0.3)] data-[state=checked]:hover:shadow-[0_0_18px_rgba(34,197,94,0.6)]"
                                                     checked={featureEnv?.enabled ?? false}
-                                                    onCheckedChange={(checked) => {
+                                                    onCheckedChange={(checked: boolean) => {
                                                         if (env.protected) {
                                                             const changes: { feature: string; action: string; payload: unknown }[] = [{
                                                                 feature: featureName!,
@@ -690,7 +690,7 @@ function FeatureDetailsContent() {
                                 <span className="text-sm font-semibold">{feature.impressionData ? "Active" : "Inactive"}</span>
                                 <Switch
                                     checked={feature.impressionData}
-                                    onCheckedChange={(checked) => updateFeatureMutation.mutate({ impressionData: checked })}
+                                    onCheckedChange={(checked: boolean) => updateFeatureMutation.mutate({ impressionData: checked })}
                                 />
                             </div>
                         </CardContent>
@@ -708,7 +708,7 @@ function FeatureDetailsContent() {
                                 <span className="text-sm font-semibold">{feature.stale ? "Stale" : "Active"}</span>
                                 <Switch
                                     checked={feature.stale}
-                                    onCheckedChange={(checked) => updateFeatureMutation.mutate({ stale: checked })}
+                                    onCheckedChange={(checked: boolean) => updateFeatureMutation.mutate({ stale: checked })}
                                 />
                             </div>
                         </CardContent>
@@ -1019,7 +1019,12 @@ function FeatureDetailsContent() {
 
 export default function FeatureDetailsPage() {
     return (
-        <Suspense fallback={<div className="space-y-6 px-6 py-8"><Skeleton className="h-8 w-64" /><Skeleton className="h-[400px] w-full" /></div>}>
+        <Suspense fallback={
+            <div className="space-y-6 px-6 py-8">
+                <Skeleton className="h-8 w-64" />
+                <Skeleton className="h-[400px] w-full" />
+            </div>
+        }>
             <FeatureDetailsContent />
         </Suspense>
     )

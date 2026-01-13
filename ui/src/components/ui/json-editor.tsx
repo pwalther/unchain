@@ -17,7 +17,10 @@ interface JsonEditorProps {
     className?: string
 }
 
-export function JsonEditor({ value, onChange, onError, className }: JsonEditorProps) {
+export const JsonEditor = React.forwardRef<
+    HTMLDivElement,
+    JsonEditorProps
+>(({ value, onChange, onError, className }, ref) => {
     const [localValue, setLocalValue] = useState(value)
     const [error, setError] = useState<string | null>(null)
 
@@ -66,4 +69,6 @@ export function JsonEditor({ value, onChange, onError, className }: JsonEditorPr
             )}
         </div>
     )
-}
+})
+
+JsonEditor.displayName = "JsonEditor"

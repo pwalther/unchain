@@ -42,7 +42,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch
                                 checked={theme === "dark"}
-                                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                                onCheckedChange={(checked: boolean) => setTheme(checked ? "dark" : "light")}
                             />
                         </div>
 
@@ -55,7 +55,7 @@ export default function SettingsPage() {
                             </div>
                             <Switch
                                 checked={theme === "system"}
-                                onCheckedChange={(checked) => checked && setTheme("system")}
+                                onCheckedChange={(checked: boolean) => checked && setTheme("system")}
                             />
                         </div>
 

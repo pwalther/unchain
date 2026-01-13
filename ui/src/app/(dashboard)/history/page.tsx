@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getProjects } from "@/features/projects/actions"
 import { getEnvironments } from "@/features/environments/actions"
 import { Project, Environment } from "@/types"
+import { Suspense } from "react"
 
 interface AuditLogItem {
     id: number
@@ -43,7 +44,7 @@ interface AuditLogItem {
     chainValid?: boolean
 }
 
-export default function HistoryPage() {
+function HistoryContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -290,13 +291,13 @@ export default function HistoryPage() {
                         <SelectTrigger>
                             <SelectValue placeholder="Select Project" />
                         </SelectTrigger>
-                        {/* @ts-expect-error - SelectContent children type mismatch is a false positive */}
                         <SelectContent>
                             {projects.map((p) => (
                                 <SelectItem key={p.id} value={p.id}>
                                     {p.name}
                                 </SelectItem>
-                            ))}                        </SelectContent>
+                            ))}
+                        </SelectContent>
                     </Select>
                 </div>
 
@@ -311,7 +312,6 @@ export default function HistoryPage() {
                                 <SelectTrigger>
                                     <SelectValue placeholder="All Environments" />
                                 </SelectTrigger>
-                                {/* @ts-expect-error - SelectContent children type mismatch is a false positive */}
                                 <SelectContent>
                                     <SelectItem value="all">
                                         All Environments
@@ -368,5 +368,13 @@ export default function HistoryPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+export default function HistoryPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <HistoryContent />
+        </Suspense>
     )
 }

@@ -113,12 +113,12 @@ function FeaturesPageContent() {
             if (isProtected && protectedEnv) {
                 return createChangeRequest(selectedProjectId, {
                     title: `Archive feature: ${feature.name}`,
-                    description: `Automatic change request for archiving protected feature flag ${feature.name}`,
                     environment: protectedEnv,
                     changes: [
                         {
-                            type: "DELETE_FEATURE",
-                            featureName: feature.name
+                            feature: feature.name,
+                            action: "DELETE_FEATURE",
+                            payload: {}
                         }
                     ]
                 })
