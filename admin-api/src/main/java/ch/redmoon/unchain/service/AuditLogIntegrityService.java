@@ -30,6 +30,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service for computing and verifying HMAC signatures on audit log entries.
@@ -46,12 +47,16 @@ public class AuditLogIntegrityService {
     private final boolean enabled;
 
     public AuditLogIntegrityService(
-            SecretProvider secretProvider,
+            Optional<SecretProvider> secretProvider,
             @Value("${unchain.audit.integrity.enabled:false}") boolean enabled) {
-        this.secretProvider = secretProvider;
         this.enabled = enabled;
+        this.secretProvider = secretProvider.orElse(null);
 
         if (enabled) {
+            if (this.secretProvider == null) {
+                throw new IllegalStateException(
+                        "Audit log integrity protection is ENABLED but no SecretProvider bean is available");
+            }
             log.info("Audit log integrity protection is ENABLED");
         } else {
             log.info("Audit log integrity protection is DISABLED");

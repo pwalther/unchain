@@ -11,7 +11,7 @@
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>ch.redmoon</groupId>
+    <groupId>ch.redmoon.unchain</groupId>
     <artifactId>sample-app</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>unchain Sample Application</name>
@@ -26,7 +26,7 @@
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
         <dependency>
-            <groupId>ch.redmoon</groupId>
+            <groupId>ch.redmoon.unchain</groupId>
             <artifactId>client-sdk</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>

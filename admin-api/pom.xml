@@ -9,7 +9,7 @@
 		<version>3.4.13</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>ch.redmoon</groupId>
+	<groupId>ch.redmoon.unchain</groupId>
 	<artifactId>unchain-admin-api</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>unchain-admin-api</name>
