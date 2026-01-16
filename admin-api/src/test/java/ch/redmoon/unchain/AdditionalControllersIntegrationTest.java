@@ -95,7 +95,7 @@ class AdditionalControllersIntegrationTest {
                                 .contentType(ContentType.JSON)
                                 .body(contextJson)
                                 .when()
-                                .post("/context")
+                                .post("/contexts")
                                 .then()
                                 .statusCode(201);
 
@@ -103,7 +103,7 @@ class AdditionalControllersIntegrationTest {
                 given()
                                 .auth().oauth2("anything")
                                 .when()
-                                .get("/context")
+                                .get("/contexts")
                                 .then()
                                 .statusCode(200)
                                 .body("size()", is(1));
@@ -112,7 +112,7 @@ class AdditionalControllersIntegrationTest {
                 given()
                                 .auth().oauth2("anything")
                                 .when()
-                                .delete("/context/userId")
+                                .delete("/contexts/userId")
                                 .then()
                                 .statusCode(200);
         }
