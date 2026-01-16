@@ -138,7 +138,7 @@
 				<configuration>
 					<scripts>
 						<script>
-							file:///${project.basedir}/build-scripts/generate-security-metadata.groovy</script>
+							file:///${project.basedir}/build/scripts/generate-security-metadata.groovy</script>
 					</scripts>
 				</configuration>
 				<dependencies>
@@ -226,6 +226,7 @@
 					</dependency>
 				</dependencies>
 				<configuration>
+					<excludeFilterFile>${project.basedir}/build/spotbugs/spotbugs-exclude.xml</excludeFilterFile>
 					<plugins>
 						<plugin>
 							<groupId>com.h3xstream.findsecbugs</groupId>

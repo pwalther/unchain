@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/4.8.4"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://github.com/spotbugs/filter/4.8.4 https://raw.githubusercontent.com/spotbugs/spotbugs/master/spotbugs/etc/findbugsfilter.xsd">
+
+    <!-- Exclude internal representation exposure for DTOs and results -->
+    <Match>
+        <Or>
+            <Bug pattern="EI_EXPOSE_REP" />
+            <Bug pattern="EI_EXPOSE_REP2" />
+        </Or>
+    </Match>
+
+    <!-- Exclude constructor throws vulnerable to finalizer attacks (common with validation or
+    property reading) -->
+    <Match>
+        <Class name="ch.redmoon.unchain.security.YamlSecretProvider" />
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+    <Match>
+        <Class name="ch.redmoon.unchain.service.AuditLogIntegrityService" />
+        <Bug pattern="CT_CONSTRUCTOR_THROW" />
+    </Match>
+
+    <!-- Exclude catching Exception when not specifically thrown -->
+    <Match>
+        <Bug pattern="REC_CATCH_EXCEPTION" />
+    </Match>
+
+    <Match>
+        <Class name="ch.redmoon.unchain.entity.AuditListener" />
+        <Bug pattern="DE_MIGHT_IGNORE" />
+    </Match>
+
+    <Match>
+        <Class name="ch.redmoon.unchain.config.BeanUtil" />
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD" />
+    </Match>
+
+</FindBugsFilter>

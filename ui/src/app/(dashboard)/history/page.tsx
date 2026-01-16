@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { Calendar as CalendarIcon, Filter, Download, CheckCircle2, AlertTriangle, XCircle, Minus } from "lucide-react"
+import { Calendar as CalendarIcon, Filter, Download, CheckCircle2, AlertTriangle, XCircle, Minus, RefreshCw, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
@@ -28,6 +28,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { getProjects } from "@/features/projects/actions"
 import { getEnvironments } from "@/features/environments/actions"
 import { Project, Environment } from "@/types"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from "@/components/ui/dialog"
 import { Suspense } from "react"
 
 interface AuditLogItem {
@@ -53,6 +60,7 @@ function HistoryContent() {
     const [selectedEnv, setSelectedEnv] = useState<string>(searchParams.get("environment") || "all")
     const [selectedFeature, setSelectedFeature] = useState<string>(searchParams.get("feature") || "")
     const [date, setDate] = useState<Date | undefined>(undefined)
+    const [viewItem, setViewItem] = useState<AuditLogItem | null>(null)
 
     // Fetch projects for selector
     const { data: projects = [] } = useQuery({
@@ -94,10 +102,11 @@ function HistoryContent() {
 
     const apiUrl = buildApiUrl()
 
-    const { data: historyData = [], isLoading } = useQuery({
+    const { data: historyData = [], isLoading, refetch, isFetching } = useQuery({
         queryKey: ["history", selectedProject, selectedEnv, selectedFeature, date],
         queryFn: () => apiFetch<AuditLogItem[]>(apiUrl!),
-        enabled: !!apiUrl
+        enabled: !!apiUrl,
+        refetchOnWindowFocus: true
     })
 
     // Columns
@@ -224,6 +233,22 @@ function HistoryContent() {
                     return <span className="text-muted-foreground italic">Invalid Data</span>
                 }
             }
+        },
+        {
+            id: "actions",
+            header: "Actions",
+            cell: ({ row }) => {
+                return (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setViewItem(row.original)}
+                        title="View Details"
+                    >
+                        <Eye className="h-4 w-4" />
+                    </Button>
+                )
+            }
         }
     ]
 
@@ -270,17 +295,29 @@ function HistoryContent() {
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Audit History</h2>
-                {historyData && historyData.length > 0 && (
+                <div className="flex items-center gap-2">
                     <Button
-                        onClick={downloadAuditLog}
+                        onClick={() => refetch()}
                         variant="outline"
                         size="sm"
                         className="gap-2"
+                        disabled={isLoading || isFetching}
                     >
-                        <Download className="h-4 w-4" />
-                        Download JSON
+                        <RefreshCw className={cn("h-4 w-4", (isLoading || isFetching) && "animate-spin")} />
+                        Refresh
                     </Button>
-                )}
+                    {historyData && historyData.length > 0 && (
+                        <Button
+                            onClick={downloadAuditLog}
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                        >
+                            <Download className="h-4 w-4" />
+                            Download JSON
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -327,28 +364,38 @@ function HistoryContent() {
 
                         <div className="flex-1 max-w-sm">
                             <label className="text-sm font-medium mb-1 block">Date (From)</label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-[240px] justify-start text-left font-normal",
-                                            !date && "text-muted-foreground"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {date ? format(date, "PPP") : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={date}
-                                        onSelect={setDate}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex flex-wrap gap-2">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-[240px] justify-start text-left font-normal",
+                                                !date && "text-muted-foreground"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {date ? format(date, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={date}
+                                            onSelect={setDate}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => refetch()}
+                                    className="gap-2"
+                                >
+                                    <Filter className="h-4 w-4" />
+                                    Search
+                                </Button>
+                            </div>
                         </div>
                     </>
                 )}
@@ -359,7 +406,7 @@ function HistoryContent() {
                     <DataTable
                         columns={columns}
                         data={historyData || []}
-                        isLoading={isLoading}
+                        isLoading={isLoading || isFetching}
                     />
                 </div>
             ) : (
@@ -367,6 +414,23 @@ function HistoryContent() {
                     <p className="text-muted-foreground">Please select a project to view history.</p>
                 </div>
             )}
+            <Dialog open={!!viewItem} onOpenChange={(open) => !open && setViewItem(null)}>
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Audit Log Entry Details</DialogTitle>
+                        <DialogDescription>
+                            Full data for log ID {viewItem?.id}
+                        </DialogDescription>
+                    </DialogHeader>
+                    {viewItem && (
+                        <div className="flex-1 overflow-auto bg-muted p-4 rounded-md">
+                            <pre className="text-xs font-mono whitespace-pre-wrap">
+                                {JSON.stringify(JSON.parse(viewItem.data), null, 2)}
+                            </pre>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
