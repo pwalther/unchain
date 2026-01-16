@@ -18,4 +18,6 @@ public class UnchainConfig {
     private boolean waitforInit = false;
     @Builder.Default
     private long initWaitTimeSeconds = 5;
+    @Builder.Default
+    private boolean sseEnabled = false;
 }

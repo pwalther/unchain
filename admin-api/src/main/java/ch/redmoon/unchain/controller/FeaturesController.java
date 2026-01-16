@@ -30,6 +30,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import ch.redmoon.unchain.exception.BusinessRuleViolationException;
 
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import java.io.IOException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -115,6 +120,7 @@ public class FeaturesController implements FeaturesApi {
                         log.info("Feature '{}' created successfully in project '{}'", featureName, projectId);
 
                         Feature responseDto = mapToSummaryDto(saved);
+                        notifyClients(projectId);
                         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
                         log.error("Conflict detected while saving feature '{}': {}", featureName, e.getMessage());
@@ -181,6 +187,7 @@ public class FeaturesController implements FeaturesApi {
                     }
 
                     featureRepository.save(f);
+                    notifyClients(projectId);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -212,6 +219,7 @@ public class FeaturesController implements FeaturesApi {
                     }
 
                     featureRepository.delete(f);
+                    notifyClients(projectId);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -425,5 +433,62 @@ public class FeaturesController implements FeaturesApi {
             }
             return vd;
         }).collect(Collectors.toList());
+    }
+
+    // Map<ProjectId, List<SseEmitter>>
+    private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+
+    @Override
+    public ResponseEntity<Object> getFeaturesStream(String projectId) {
+        SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // Keep alive indefinitely
+        emitters.computeIfAbsent(projectId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+
+        emitter.onCompletion(() -> removeEmitter(projectId, emitter));
+        emitter.onTimeout(() -> removeEmitter(projectId, emitter));
+
+        // Initial PUSH of current state
+        try {
+            GetFeaturesByProject200Response featuresResponse = getFeaturesByProject(projectId).getBody();
+            if (featuresResponse != null) {
+                emitter.send(featuresResponse);
+            }
+        } catch (IOException e) {
+            emitter.completeWithError(e);
+            removeEmitter(projectId, emitter);
+        }
+
+        return ResponseEntity.ok(emitter);
+    }
+
+    public void notifyClients(String projectId) {
+        List<SseEmitter> projectEmitters = emitters.get(projectId);
+        if (projectEmitters == null || projectEmitters.isEmpty()) {
+            return;
+        }
+
+        // Fetch latest state
+        GetFeaturesByProject200Response featuresResponse = getFeaturesByProject(projectId).getBody();
+        if (featuresResponse == null)
+            return;
+
+        List<SseEmitter> deadEmitters = new java.util.ArrayList<>();
+        projectEmitters.forEach(emitter -> {
+            try {
+                emitter.send(featuresResponse);
+            } catch (IOException e) {
+                deadEmitters.add(emitter);
+            }
+        });
+
+        if (!deadEmitters.isEmpty()) {
+            projectEmitters.removeAll(deadEmitters);
+        }
+    }
+
+    private void removeEmitter(String projectId, SseEmitter emitter) {
+        List<SseEmitter> projectEmitters = emitters.get(projectId);
+        if (projectEmitters != null) {
+            projectEmitters.remove(emitter);
+        }
     }
 }

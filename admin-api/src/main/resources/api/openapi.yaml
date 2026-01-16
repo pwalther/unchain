@@ -249,6 +249,29 @@ paths:
         "409":
           $ref: "#/components/responses/ConflictError"
 
+  /projects/{projectId}/features/stream:
+    get:
+      operationId: getFeaturesStream
+      x-required-permissions: [PROJECT_READ]
+      summary: Stream feature updates using Server-Side Events
+      tags: [Features]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+      responses:
+        "200":
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: object
+                description: SSE Stream
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
   /projects/{projectId}/features/{featureName}:
     get:
       operationId: getFeature

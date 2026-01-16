@@ -85,6 +85,82 @@ public class UnchainClient {
                 log.warn("Interrupted while waiting for initial fetch");
             }
         }
+
+        if (config.isSseEnabled()) {
+            startSseConnection();
+        }
+    }
+
+    private void startSseConnection() {
+        new Thread(this::connectSse, "unchain-sse-client").start();
+    }
+
+    private void connectSse() {
+        while (!scheduler.isShutdown()) {
+            for (String projectId : config.getProjects()) {
+                try {
+                    URI url = URI.create(
+                            config.getApiUrl().replaceAll("/$", "") + "/projects/" + projectId + "/features/stream");
+                    String token = config.getTokenSupplier() != null ? config.getTokenSupplier().get() : null;
+
+                    log.info("Connecting to SSE stream for project: {}", projectId);
+                    HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                            .uri(url)
+                            .header("Accept", "text/event-stream")
+                            .header("User-Agent", "unchain-java-client/" + VERSION);
+
+                    if (token != null) {
+                        requestBuilder.header("Authorization", "Bearer " + token);
+                    }
+
+                    httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofLines())
+                            .thenAccept(response -> {
+                                if (response.statusCode() == 200) {
+                                    log.info("SSE Connected to project: {}", projectId);
+                                    response.body().forEach(line -> {
+                                        if (line.startsWith("data:")) {
+                                            String data = line.substring(5).trim();
+                                            if (!data.isEmpty()) {
+                                                try {
+                                                    // The SSE stream usually sends the same
+                                                    // GetFeaturesByProject200Response structure
+                                                    // but wrapped in 'features' property or just the object.
+                                                    // FeaturesController sends GetFeaturesByProject200Response which
+                                                    // HAS 'features' property.
+                                                    FeatureResponse fr = objectMapper.readValue(data,
+                                                            FeatureResponse.class);
+                                                    if (fr.getFeatures() != null) {
+                                                        for (Feature f : fr.getFeatures()) {
+                                                            featureCache.put(projectId + ":" + f.getName(), f);
+                                                        }
+                                                        log.debug("Updated features from SSE for project: {}",
+                                                                projectId);
+                                                    }
+                                                } catch (Exception e) {
+                                                    log.error("Failed to parse SSE data", e);
+                                                }
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    log.warn("SSE Connection failed with status: {}", response.statusCode());
+                                }
+                            })
+                            .join(); // Wait for stream to end (disconnect)
+
+                } catch (Exception e) {
+                    log.error("SSE Connection error for project {}", projectId, e);
+                }
+            }
+
+            // Reconnect backoff - 10 seconds
+            try {
+                Thread.sleep(10_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
     }
 
     public UnchainConfig getConfig() {
