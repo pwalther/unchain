@@ -22,6 +22,7 @@ import ch.redmoon.unchain.api.model.LegalValue;
 import ch.redmoon.unchain.entity.ContextFieldEntity;
 import ch.redmoon.unchain.entity.LegalValueEntity;
 import ch.redmoon.unchain.repository.ContextFieldRepository;
+import ch.redmoon.unchain.repository.StrategyConstraintRepository;
 import ch.redmoon.unchain.repository.LegalValueRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 public class ContextController implements ContextApi {
 
     private final ContextFieldRepository contextFieldRepository;
+    private final StrategyConstraintRepository strategyConstraintRepository;
     private final LegalValueRepository legalValueRepository;
 
     @Override
@@ -78,11 +80,18 @@ public class ContextController implements ContextApi {
 
     @Override
     public ResponseEntity<Void> deleteContextField(String contextField) {
-        if (contextFieldRepository.existsById(contextField)) {
-            contextFieldRepository.deleteById(contextField);
-            return ResponseEntity.ok().build();
+        if (!contextFieldRepository.existsById(contextField)) {
+            return ResponseEntity.notFound().build();
         }
-        return ResponseEntity.notFound().build();
+
+        if (strategyConstraintRepository.existsByContextName(contextField)) {
+            log.warn("Attempt to delete context field '{}' which is still in use by one or more strategies",
+                    contextField);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        contextFieldRepository.deleteById(contextField);
+        return ResponseEntity.ok().build();
     }
 
     @Override

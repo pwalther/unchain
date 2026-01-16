@@ -74,13 +74,14 @@ databaseChangeLog:
         - insert:
             tableName: context_field
             columns:
-              - column: { name: name, value: "environment" }
+              - column: { name: name, value: "currentTimestamp" }
               - column:
                   {
                     name: description,
-                    value: "The environment (e.g. production, staging)",
+                    value: "The current timestamp of the user session",
                   }
               - column: { name: stickiness, valueBoolean: false }
+
         - insert:
             tableName: context_field
             columns:

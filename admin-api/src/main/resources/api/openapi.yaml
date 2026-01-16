@@ -994,7 +994,7 @@ paths:
   # =========================================================================
   # CONTEXT
   # =========================================================================
-  /context:
+  /contexts:
     get:
       operationId: listContextFields
       summary: Get all context fields
@@ -1022,7 +1022,7 @@ paths:
         "201":
           description: Context field created
 
-  /context/{contextField}:
+  /contexts/{contextField}:
     put:
       operationId: updateContextField
       summary: Update a context field
@@ -1055,8 +1055,10 @@ paths:
       responses:
         "200":
           description: Context field deleted
+        "409":
+          description: Context field is in use and cannot be deleted
 
-  /context/{contextField}/legal-values:
+  /contexts/{contextField}/legal-values:
     post:
       operationId: addLegalValueToContextField
       summary: Add a legal value to a context field
@@ -1077,7 +1079,7 @@ paths:
         "200":
           description: Legal value added
 
-  /context/{contextField}/legal-values/{value}:
+  /contexts/{contextField}/legal-values/{value}:
     delete:
       operationId: removeLegalValueFromContextField
       summary: Remove a legal value from a context field
@@ -1772,6 +1774,9 @@ components:
               SEMVER_EQ,
               SEMVER_GT,
               SEMVER_LT,
+              DATE_AFTER,
+              DATE_BEFORE,
+              IN_TIME_WINDOW,
             ]
         values:
           type: array

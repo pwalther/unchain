@@ -32,6 +32,7 @@ const navItems = [
     { name: "Strategies", href: "/strategies", icon: Zap },
     // { name: "Segments", href: "/segments", icon: Users },
     { name: "Environments", href: "/environments", icon: Globe },
+    { name: "Contexts", href: "/contexts", icon: Users },
     { name: "History", href: "/history", icon: ClipboardList },
 ]
 

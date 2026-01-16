@@ -406,7 +406,7 @@ function HistoryContent() {
                     <DataTable
                         columns={columns}
                         data={historyData || []}
-                        isLoading={isLoading || isFetching}
+                        isLoading={isLoading}
                     />
                 </div>
             ) : (

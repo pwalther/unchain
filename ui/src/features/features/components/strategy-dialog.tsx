@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { X, Plus, Hash, Percent, ListIcon, Type, CheckCircle2, Settings, Filter, Trash2, Calendar, Globe, User, Code2 } from "lucide-react"
+import { X, Plus, Hash, Percent, ListIcon, Type, CheckCircle2, Settings, Filter, Trash2, Calendar, Globe, User, Code2, Clock } from "lucide-react"
 import { JsonEditor } from "@/components/ui/json-editor"
 
 import {
@@ -51,7 +51,34 @@ const formSchema = z.object({
         values: z.array(z.string()).min(1, "At least one value is required"),
         caseInsensitive: z.boolean(),
         inverted: z.boolean(),
-    })),
+    })).superRefine((data, ctx) => {
+        data.forEach((constraint, index) => {
+            if (constraint.operator === 'IN_TIME_WINDOW') {
+                const value = constraint.values[0] || "";
+                // Format: HH:mm-HH:mm or HH:mm-HH:mm|Region/City
+                const parts = value.split('|');
+                const timePart = parts[0];
+                const timeRangeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+
+                if (!timePart.match(timeRangeRegex)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Invalid time window format (HH:mm-HH:mm)",
+                        path: [index, 'values', 0]
+                    });
+                }
+            } else if (['DATE_AFTER', 'DATE_BEFORE'].includes(constraint.operator)) {
+                const value = constraint.values[0] || "";
+                if (!Date.parse(value)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Invalid date format",
+                        path: [index, 'values', 0]
+                    });
+                }
+            }
+        });
+    }),
     variants: z.array(z.object({
         name: z.string().min(1, "Variant name is required"),
         weight: z.number().min(0).max(1000),
@@ -478,7 +505,7 @@ export function StrategyDialog({
                                                                         </SelectTrigger>
                                                                     </FormControl>
                                                                     <SelectContent>
-                                                                        {['IN', 'NOT_IN', 'STR_ENDS_WITH', 'STR_STARTS_WITH', 'STR_CONTAINS', 'NUM_EQ', 'NUM_GT', 'NUM_LT', 'DATE_AFTER', 'DATE_BEFORE', 'SEMVER_EQ', 'SEMVER_GT', 'SEMVER_LT'].map(op => (
+                                                                        {['IN', 'NOT_IN', 'STR_ENDS_WITH', 'STR_STARTS_WITH', 'STR_CONTAINS', 'NUM_EQ', 'NUM_GT', 'NUM_LT', 'DATE_AFTER', 'DATE_BEFORE', 'IN_TIME_WINDOW', 'SEMVER_EQ', 'SEMVER_GT', 'SEMVER_LT'].map(op => (
                                                                             <SelectItem key={op} value={op}>{op}</SelectItem>
                                                                         ))}
                                                                     </SelectContent>
@@ -491,74 +518,171 @@ export function StrategyDialog({
                                                 <FormField
                                                     control={form.control}
                                                     name={`constraints.${index}.values`}
-                                                    render={({ field }) => (
-                                                        <FormItem className="space-y-2">
-                                                            <div className="flex items-center justify-between">
-                                                                <FormLabel className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70">Values</FormLabel>
-                                                                <span className="text-[9px] text-muted-foreground italic px-2 py-0.5 rounded bg-muted">
-                                                                    {['IN', 'NOT_IN'].includes(form.watch(`constraints.${index}.operator`))
-                                                                        ? "Enter to add multiple"
-                                                                        : "Single value only"}
-                                                                </span>
-                                                            </div>
-                                                            <div className="space-y-3">
-                                                                <div className="flex gap-2">
-                                                                    <Input
-                                                                        className="h-10 bg-background/50"
-                                                                        placeholder={field.value?.length > 0 && !['IN', 'NOT_IN'].includes(form.getValues(`constraints.${index}.operator`))
-                                                                            ? "Value already set"
-                                                                            : "Type value..."
-                                                                        }
-                                                                        disabled={field.value?.length > 0 && !['IN', 'NOT_IN'].includes(form.watch(`constraints.${index}.operator`))}
-                                                                        onKeyDown={(e) => {
-                                                                            if (e.key === 'Enter') {
-                                                                                e.preventDefault()
-                                                                                const val = e.currentTarget.value.trim()
+                                                    render={({ field }) => {
+                                                        const operator = form.watch(`constraints.${index}.operator`);
+                                                        const currentValue = field.value?.[0] || "";
+
+                                                        if (['DATE_AFTER', 'DATE_BEFORE'].includes(operator)) {
+                                                            return (
+                                                                <FormItem className="space-y-2">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <FormLabel className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70">Date</FormLabel>
+                                                                    </div>
+                                                                    <div className="relative">
+                                                                        <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                                        <Input
+                                                                            type="datetime-local"
+                                                                            className="pl-9 h-10 bg-background/50"
+                                                                            value={currentValue}
+                                                                            onChange={(e) => field.onChange([e.target.value])}
+                                                                        />
+                                                                    </div>
+                                                                    <FormMessage className="text-[10px]" />
+                                                                </FormItem>
+                                                            );
+                                                        }
+
+                                                        if (operator === 'IN_TIME_WINDOW') {
+                                                            // Parse value: HH:mm-HH:mm|Timezone
+                                                            const [range, timezone] = (currentValue || "-").split('|');
+                                                            const [start, end] = range.split('-');
+
+                                                            return (
+                                                                <FormItem className="space-y-2">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <FormLabel className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70">Time Window & Zone</FormLabel>
+                                                                    </div>
+                                                                    <div className="flex gap-2">
+                                                                        <div className="relative flex-1">
+                                                                            <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                                            <Input
+                                                                                type="time"
+                                                                                className="pl-9 h-10 bg-background/50 text-xs"
+                                                                                value={start || ""}
+                                                                                onChange={(e) => {
+                                                                                    const newStart = e.target.value;
+                                                                                    const newRange = `${newStart}-${end || ''}`;
+                                                                                    const newValue = timezone ? `${newRange}|${timezone}` : newRange;
+                                                                                    field.onChange([newValue]);
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                        <span className="self-center text-muted-foreground">-</span>
+                                                                        <div className="relative flex-1">
+                                                                            <Clock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                                            <Input
+                                                                                type="time"
+                                                                                className="pl-9 h-10 bg-background/50 text-xs"
+                                                                                value={end || ""}
+                                                                                onChange={(e) => {
+                                                                                    const newEnd = e.target.value;
+                                                                                    const newRange = `${start || ''}-${newEnd}`;
+                                                                                    const newValue = timezone ? `${newRange}|${timezone}` : newRange;
+                                                                                    field.onChange([newValue]);
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="relative">
+                                                                        <Globe className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                                        <Select
+                                                                            value={timezone || "local"}
+                                                                            onValueChange={(val) => {
+                                                                                const newTz = val === "local" ? "" : val;
+                                                                                const newValue = newTz ? `${range}|${newTz}` : range;
+                                                                                field.onChange([newValue]);
+                                                                            }}
+                                                                        >
+                                                                            <FormControl>
+                                                                                <SelectTrigger className="pl-9 h-10 bg-background/50">
+                                                                                    <SelectValue placeholder="User Local Time" />
+                                                                                </SelectTrigger>
+                                                                            </FormControl>
+                                                                            <SelectContent className="max-h-[200px]">
+                                                                                <SelectItem value="local">
+                                                                                    User Local Time
+                                                                                </SelectItem>
+                                                                                {Intl.supportedValuesOf('timeZone').map(tz => (
+                                                                                    <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                    <FormMessage className="text-[10px]" />
+                                                                </FormItem>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <FormItem className="space-y-2">
+                                                                <div className="flex items-center justify-between">
+                                                                    <FormLabel className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground/70">Values</FormLabel>
+                                                                    <span className="text-[9px] text-muted-foreground italic px-2 py-0.5 rounded bg-muted">
+                                                                        {['IN', 'NOT_IN'].includes(operator || "")
+                                                                            ? "Enter to add multiple"
+                                                                            : "Single value only"}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="space-y-3">
+                                                                    <div className="flex gap-2">
+                                                                        <Input
+                                                                            className="h-10 bg-background/50"
+                                                                            placeholder={field.value?.length > 0 && !['IN', 'NOT_IN'].includes(operator || "")
+                                                                                ? "Value already set"
+                                                                                : "Type value..."
+                                                                            }
+                                                                            disabled={field.value?.length > 0 && !['IN', 'NOT_IN'].includes(operator || "")}
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') {
+                                                                                    e.preventDefault()
+                                                                                    const val = e.currentTarget.value.trim()
+                                                                                    const currentValues = field.value || []
+                                                                                    if (val && !currentValues.includes(val)) {
+                                                                                        field.onChange([...currentValues, val])
+                                                                                        e.currentTarget.value = ""
+                                                                                    }
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="secondary"
+                                                                            size="icon"
+                                                                            className="h-10 w-10 shrink-0 bg-background shadow-sm hover:shadow-md transition-all"
+                                                                            disabled={field.value?.length > 0 && !['IN', 'NOT_IN'].includes(operator || "")}
+                                                                            onClick={(e) => {
+                                                                                const input = e.currentTarget.previousElementSibling as HTMLInputElement
+                                                                                const val = input.value.trim()
                                                                                 const currentValues = field.value || []
                                                                                 if (val && !currentValues.includes(val)) {
                                                                                     field.onChange([...currentValues, val])
-                                                                                    e.currentTarget.value = ""
+                                                                                    input.value = ""
                                                                                 }
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="secondary"
-                                                                        size="icon"
-                                                                        className="h-10 w-10 shrink-0 bg-background shadow-sm hover:shadow-md transition-all"
-                                                                        disabled={field.value?.length > 0 && !['IN', 'NOT_IN'].includes(form.watch(`constraints.${index}.operator`))}
-                                                                        onClick={(e) => {
-                                                                            const input = e.currentTarget.previousElementSibling as HTMLInputElement
-                                                                            const val = input.value.trim()
-                                                                            const currentValues = field.value || []
-                                                                            if (val && !currentValues.includes(val)) {
-                                                                                field.onChange([...currentValues, val])
-                                                                                input.value = ""
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <Plus className="h-4 w-4 text-primary" />
-                                                                    </Button>
+                                                                            }}
+                                                                        >
+                                                                            <Plus className="h-4 w-4 text-primary" />
+                                                                        </Button>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+                                                                        {field.value?.map((v: string) => (
+                                                                            <Badge key={v} variant="secondary" className="gap-1 pl-2 pr-1.5 h-6 text-[10px] font-medium bg-background border border-muted-foreground/10">
+                                                                                {v}
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => field.onChange(field.value.filter((item: string) => item !== v))}
+                                                                                    className="hover:bg-muted rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                                                                                >
+                                                                                    <X className="h-3 w-3" />
+                                                                                </button>
+                                                                            </Badge>
+                                                                        ))}
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex flex-wrap gap-1.5 min-h-[24px]">
-                                                                    {field.value?.map((v: string) => (
-                                                                        <Badge key={v} variant="secondary" className="gap-1 pl-2 pr-1.5 h-6 text-[10px] font-medium bg-background border border-muted-foreground/10">
-                                                                            {v}
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => field.onChange(field.value.filter((item: string) => item !== v))}
-                                                                                className="hover:bg-muted rounded-full p-0.5 text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                <X className="h-3 w-3" />
-                                                                            </button>
-                                                                        </Badge>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                            <FormMessage className="text-[10px]" />
-                                                        </FormItem>
-                                                    )}
+                                                                <FormMessage className="text-[10px]" />
+                                                            </FormItem>
+                                                        );
+                                                    }}
                                                 />
 
                                                 <div className="flex items-center gap-8 pt-1 border-t border-muted-foreground/5 mt-2">
