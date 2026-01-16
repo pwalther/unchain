@@ -283,6 +283,83 @@ Variants can include an optional **Payload** (String, JSON, or Number), allowing
 - **OpenAPI Spec**: Available at `/api-docs`
 - **Swagger UI**: Accessible at `/swagger-ui/index.html` (when enabled)
 
+
+
+## Server-Side Events (SSE) Support
+
+Unchain supports streaming feature flag updates to clients using Server-Side Events (SSE). This allows for near real-time updates without polling.
+
+### Enabling SSE in Client SDK
+
+To enable SSE in the Java Client SDK, set the `sseEnabled` flag in `UnchainConfig`:
+
+```java
+UnchainConfig config = UnchainConfig.builder()
+    .apiUrl("http://localhost:8080")
+    .apiKey("your-api-key")
+    .projectId("default")
+    .environment("production")
+    .sseEnabled(true) // Enable SSE
+    .build();
+
+UnchainClient client = new UnchainClient(config);
+```
+
+When enabled, the client will connect to `/projects/{projectId}/features/stream` and receive updates automatically. The polling mechanism remains active as a fallback and safety sync (default every 120s).
+
+### Architecture
+
+- **Backend**: Exposes `/projects/{projectId}/features/stream`.
+- **Event Handling**:
+  - Local updates (via API/UI) trigger SSE notifications immediately.
+  - External updates (e.g. from other instances) can be ingested via `ActiveMQFeatureEventHandler` (requires ActiveMQ setup) or by implementing valid logic in `FeatureEventHandler`.
+
+### Backend Configuration
+
+SSE is disabled by default. To enable it on the server:
+
+```yaml
+unchain:
+  sse:
+    enabled: true
+    # Optional: Select specific handler implementation by FQCN
+    # handler: ch.redmoon.unchain.event.ActiveMQFeatureEventHandler
+```
+
+If disabled, the `/stream` endpoint returns `501 Not Implemented`, and the client automatically falls back to polling.
+Users can provide their own implementation of `FeatureEventHandler` and configure it via the `handler` property if they annotate their component with `@ConditionalOnProperty`.
+
+
+### Feature Event Sender (Outbound)
+
+To publish feature changes (creation, update, deletion, toggle) to external systems (like a Message Queue) for synchronization, you can configure a `FeatureEventSender`.
+
+In `application.yaml`:
+
+```yaml
+unchain:
+  sse:
+    # ...
+    sender: ch.redmoon.unchain.event.ActiveMQFeatureEventSender
+```
+
+Similar to the handler, this property specifies the Fully Qualified Class Name (FQCN) of the implementation. The system will look for a Spring Bean of this type first, and fall back to instantiating it if none is found.
+
+#### Implementing a Custom Sender
+
+Implement the `FeatureEventSender` interface:
+
+```java
+public class MyCustomSender implements FeatureEventSender {
+    @Override
+    public void sendFeatureUpdate(String projectId) {
+        // Send update to external system
+    }
+}
+```
+
+If your sender requires dependency injection (e.g., `JmsTemplate`), define it as a Bean or ensure it has a no-args constructor if relying on the fallback instantiation. Using `@Component` and letting Spring manage it is recommended.
+
 ## License
 
 Apache License 2.0

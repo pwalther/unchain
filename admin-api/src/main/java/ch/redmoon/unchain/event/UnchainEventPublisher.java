@@ -87,4 +87,40 @@ public class UnchainEventPublisher {
             }
         });
     }
+
+    public void publishFeatureCreated(String projectId, String featureName) {
+        String user = getCurrentUser();
+        log.debug("Publishing FeatureCreated event for {}/{} by {}", projectId, featureName, user);
+        observers.forEach(o -> {
+            try {
+                o.onFeatureCreated(projectId, featureName, user);
+            } catch (Exception e) {
+                log.error("Error in observer onFeatureCreated", e);
+            }
+        });
+    }
+
+    public void publishFeatureUpdated(String projectId, String featureName) {
+        String user = getCurrentUser();
+        log.debug("Publishing FeatureUpdated event for {}/{} by {}", projectId, featureName, user);
+        observers.forEach(o -> {
+            try {
+                o.onFeatureUpdated(projectId, featureName, user);
+            } catch (Exception e) {
+                log.error("Error in observer onFeatureUpdated", e);
+            }
+        });
+    }
+
+    public void publishFeatureDeleted(String projectId, String featureName) {
+        String user = getCurrentUser();
+        log.debug("Publishing FeatureDeleted event for {}/{} by {}", projectId, featureName, user);
+        observers.forEach(o -> {
+            try {
+                o.onFeatureDeleted(projectId, featureName, user);
+            } catch (Exception e) {
+                log.error("Error in observer onFeatureDeleted", e);
+            }
+        });
+    }
 }

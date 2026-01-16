@@ -52,6 +52,12 @@ unchain:
     authorization-provider-class: ch.redmoon.unchain.security.TrustAllAuthorizationProvider
     cors:
       allowed-origins: "http://localhost:3000, https://server.redmoon.ch, https://192.168.1.36:3333"
+  sse:
+    enabled: ${SSE_ENABLED:false}
+    # Handler for receiving external updates (e.g. from a message queue)
+    # handler: ch.redmoon.unchain.event.ActiveMQFeatureEventHandler
+    # Sender for publishing updates to external systems (e.g. to a message queue)
+    # sender: ch.redmoon.unchain.event.ActiveMQFeatureEventSender
 
 logging:
   level:

@@ -19,13 +19,9 @@ package ch.redmoon.unchain.event;
 import ch.redmoon.unchain.controller.FeaturesController;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Service;
 
-@Service
 @Slf4j
 @RequiredArgsConstructor
-@Profile("!test") // Avoid interfering with tests unless specifically testing this
 public class ActiveMQFeatureEventHandler implements FeatureEventHandler {
 
     // In a real implementation, you would inject a JmsTemplate or similar

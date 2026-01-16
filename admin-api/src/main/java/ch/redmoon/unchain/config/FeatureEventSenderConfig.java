@@ -16,43 +16,44 @@
 
 package ch.redmoon.unchain.config;
 
-import ch.redmoon.unchain.security.AuthorizationProvider;
-import ch.redmoon.unchain.security.TrustAllAuthorizationProvider;
+import ch.redmoon.unchain.event.FeatureEventSender;
+import ch.redmoon.unchain.event.NoOpFeatureEventSender;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import org.springframework.context.ApplicationContext;
-import org.springframework.beans.BeansException;
-import org.springframework.context.annotation.Primary;
+import org.springframework.util.StringUtils;
 
 @Configuration
-public class AuthorizationConfig {
+public class FeatureEventSenderConfig {
 
     private final ApplicationContext applicationContext;
 
-    public AuthorizationConfig(ApplicationContext applicationContext) {
+    public FeatureEventSenderConfig(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
-    @Value("${unchain.security.authorization-provider-class:ch.redmoon.unchain.security.TrustAllAuthorizationProvider}")
-    private String providerClassName;
+    @Value("${unchain.sse.sender:}")
+    private String senderClassName;
 
     @Bean
-    @Primary
-    public AuthorizationProvider authorizationProvider() {
+    public FeatureEventSender featureEventSender() {
+        if (!StringUtils.hasText(senderClassName)) {
+            return new NoOpFeatureEventSender();
+        }
+
         try {
-            Class<?> clazz = Class.forName(providerClassName);
+            Class<?> clazz = Class.forName(senderClassName);
             try {
-                return (AuthorizationProvider) applicationContext.getBean(clazz);
+                return (FeatureEventSender) applicationContext.getBean(clazz);
             } catch (BeansException e) {
-                // Bean not found, fallback to instantiation
-                return (AuthorizationProvider) applicationContext.getAutowireCapableBeanFactory()
+                return (FeatureEventSender) applicationContext.getAutowireCapableBeanFactory()
                         .createBean(clazz);
             }
         } catch (Exception e) {
-            // Fallback to TrustAll if class not found or instantiation fails
-            return new TrustAllAuthorizationProvider();
+            // Fallback to NoOp if class not found or instantiation fails
+            return new NoOpFeatureEventSender();
         }
     }
 }

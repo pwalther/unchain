@@ -16,49 +16,46 @@
 
 package ch.redmoon.unchain.event;
 
-import ch.redmoon.unchain.controller.FeaturesController;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Component
 @Slf4j
-@ConditionalOnProperty(name = "unchain.sse.enabled", havingValue = "true")
-public class SseFeatureEventObserver implements UnchainEventObserver {
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = "unchain.sse.sender")
+public class FeatureEventSenderObserver implements UnchainEventObserver {
 
-    private final FeaturesController featuresController;
-
-    public SseFeatureEventObserver(@org.springframework.context.annotation.Lazy FeaturesController featuresController) {
-        this.featuresController = featuresController;
-    }
+    private final FeatureEventSender featureEventSender;
 
     @Override
     public void onFeatureEnabled(String projectId, String featureName, String environment, String user) {
-        log.debug("Notifying SSE clients for feature enabled: {}", featureName);
-        featuresController.notifyClients(projectId);
+        log.debug("Sending feature update to sender for feature enabled: {}", featureName);
+        featureEventSender.sendFeatureUpdate(projectId);
     }
 
     @Override
     public void onFeatureDisabled(String projectId, String featureName, String environment, String user) {
-        log.debug("Notifying SSE clients for feature disabled: {}", featureName);
-        featuresController.notifyClients(projectId);
+        log.debug("Sending feature update to sender for feature disabled: {}", featureName);
+        featureEventSender.sendFeatureUpdate(projectId);
     }
 
     @Override
     public void onFeatureCreated(String projectId, String featureName, String user) {
-        log.debug("Notifying SSE clients for feature created: {}", featureName);
-        featuresController.notifyClients(projectId);
+        log.debug("Sending feature update to sender for feature created: {}", featureName);
+        featureEventSender.sendFeatureUpdate(projectId);
     }
 
     @Override
     public void onFeatureUpdated(String projectId, String featureName, String user) {
-        log.debug("Notifying SSE clients for feature updated: {}", featureName);
-        featuresController.notifyClients(projectId);
+        log.debug("Sending feature update to sender for feature updated: {}", featureName);
+        featureEventSender.sendFeatureUpdate(projectId);
     }
 
     @Override
     public void onFeatureDeleted(String projectId, String featureName, String user) {
-        log.debug("Notifying SSE clients for feature deleted: {}", featureName);
-        featuresController.notifyClients(projectId);
+        log.debug("Sending feature update to sender for feature deleted: {}", featureName);
+        featureEventSender.sendFeatureUpdate(projectId);
     }
 }

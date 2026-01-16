@@ -48,4 +48,22 @@ public interface UnchainEventObserver {
      */
     default void onChangeRequestUpdated(ChangeRequestEntity changeRequest, String action, String user) {
     }
+
+    /**
+     * Called when a new feature is created.
+     */
+    default void onFeatureCreated(String projectId, String featureName, String user) {
+    }
+
+    /**
+     * Called when a feature is updated.
+     */
+    default void onFeatureUpdated(String projectId, String featureName, String user) {
+    }
+
+    /**
+     * Called when a feature is deleted.
+     */
+    default void onFeatureDeleted(String projectId, String featureName, String user) {
+    }
 }

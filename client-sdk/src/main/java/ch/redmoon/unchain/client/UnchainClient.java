@@ -14,6 +14,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -97,6 +98,7 @@ public class UnchainClient {
 
     private void connectSse() {
         while (!scheduler.isShutdown()) {
+            boolean serverNotImplemented = false;
             for (String projectId : config.getProjects()) {
                 try {
                     URI url = URI.create(
@@ -113,44 +115,58 @@ public class UnchainClient {
                         requestBuilder.header("Authorization", "Bearer " + token);
                     }
 
-                    httpClient.sendAsync(requestBuilder.build(), HttpResponse.BodyHandlers.ofLines())
-                            .thenAccept(response -> {
-                                if (response.statusCode() == 200) {
-                                    log.info("SSE Connected to project: {}", projectId);
-                                    response.body().forEach(line -> {
-                                        if (line.startsWith("data:")) {
-                                            String data = line.substring(5).trim();
-                                            if (!data.isEmpty()) {
-                                                try {
-                                                    // The SSE stream usually sends the same
-                                                    // GetFeaturesByProject200Response structure
-                                                    // but wrapped in 'features' property or just the object.
-                                                    // FeaturesController sends GetFeaturesByProject200Response which
-                                                    // HAS 'features' property.
-                                                    FeatureResponse fr = objectMapper.readValue(data,
-                                                            FeatureResponse.class);
-                                                    if (fr.getFeatures() != null) {
-                                                        for (Feature f : fr.getFeatures()) {
-                                                            featureCache.put(projectId + ":" + f.getName(), f);
-                                                        }
-                                                        log.debug("Updated features from SSE for project: {}",
-                                                                projectId);
-                                                    }
-                                                } catch (Exception e) {
-                                                    log.error("Failed to parse SSE data", e);
+                    // Use synchronous send for easier control flow and stream handling in this
+                    // dedicated thread
+                    HttpRequest request = requestBuilder.build();
+                    try {
+                        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofLines());
+
+                        if (response.statusCode() == 501) {
+                            log.warn("Server returned 501 Not Implemented for SSE. Disabling SSE for project: {}",
+                                    projectId);
+                            serverNotImplemented = true;
+                            break; // Stop trying other projects if server doesn't support it globally?
+                            // Usually if one 501s, all will.
+                        }
+
+                        if (response.statusCode() == 200) {
+                            log.info("SSE Connected to project: {}", projectId);
+                            response.body().forEach(line -> {
+                                if (line.startsWith("data:")) {
+                                    String data = line.substring(5).trim();
+                                    if (!data.isEmpty()) {
+                                        try {
+                                            FeatureResponse fr = objectMapper.readValue(data, FeatureResponse.class);
+                                            if (fr.getFeatures() != null) {
+                                                for (Feature f : fr.getFeatures()) {
+                                                    featureCache.put(projectId + ":" + f.getName(), f);
                                                 }
+                                                log.debug("Updated features from SSE for project: {}", projectId);
                                             }
+                                        } catch (Exception e) {
+                                            log.error("Failed to parse SSE data", e);
                                         }
-                                    });
-                                } else {
-                                    log.warn("SSE Connection failed with status: {}", response.statusCode());
+                                    }
                                 }
-                            })
-                            .join(); // Wait for stream to end (disconnect)
+                            });
+                        } else {
+                            log.warn("SSE Connection failed with status: {}", response.statusCode());
+                        }
+                    } catch (IOException e) {
+                        log.error("SSE Connection IO error for project {}", projectId, e);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
 
                 } catch (Exception e) {
                     log.error("SSE Connection error for project {}", projectId, e);
                 }
+            }
+
+            if (serverNotImplemented) {
+                log.warn("SSE disabled due to server 501 response.");
+                break;
             }
 
             // Reconnect backoff - 10 seconds

@@ -25,6 +25,7 @@ import ch.redmoon.unchain.event.UnchainEventPublisher;
 import ch.redmoon.unchain.entity.ChangeRequestState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -120,7 +121,7 @@ public class FeaturesController implements FeaturesApi {
                         log.info("Feature '{}' created successfully in project '{}'", featureName, projectId);
 
                         Feature responseDto = mapToSummaryDto(saved);
-                        notifyClients(projectId);
+                        eventPublisher.publishFeatureCreated(projectId, featureName);
                         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
                     } catch (org.springframework.dao.DataIntegrityViolationException e) {
                         log.error("Conflict detected while saving feature '{}': {}", featureName, e.getMessage());
@@ -187,7 +188,7 @@ public class FeaturesController implements FeaturesApi {
                     }
 
                     featureRepository.save(f);
-                    notifyClients(projectId);
+                    eventPublisher.publishFeatureUpdated(projectId, featureName);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -219,7 +220,7 @@ public class FeaturesController implements FeaturesApi {
                     }
 
                     featureRepository.delete(f);
-                    notifyClients(projectId);
+                    eventPublisher.publishFeatureDeleted(projectId, featureName);
                     return ResponseEntity.ok().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -438,8 +439,15 @@ public class FeaturesController implements FeaturesApi {
     // Map<ProjectId, List<SseEmitter>>
     private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
+    @Value("${unchain.sse.enabled:false}")
+    private boolean sseEnabled;
+
     @Override
     public ResponseEntity<Object> getFeaturesStream(String projectId) {
+        if (!sseEnabled) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        }
+
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE); // Keep alive indefinitely
         emitters.computeIfAbsent(projectId, k -> new CopyOnWriteArrayList<>()).add(emitter);
 
@@ -461,6 +469,10 @@ public class FeaturesController implements FeaturesApi {
     }
 
     public void notifyClients(String projectId) {
+        if (!sseEnabled) {
+            return;
+        }
+
         List<SseEmitter> projectEmitters = emitters.get(projectId);
         if (projectEmitters == null || projectEmitters.isEmpty()) {
             return;
