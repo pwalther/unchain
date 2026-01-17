@@ -37,7 +37,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { StrategyDefinition, StrategyParameterDefinition, Strategy, Constraint, ContextField, Variant } from "@/types"
 import { useQuery } from "@tanstack/react-query"
-import { getContextFields } from "@/features/context/actions"
+import { getContexts } from "@/features/contexts/actions"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useFieldArray } from "react-hook-form"
@@ -146,7 +146,7 @@ export function StrategyDialog({
 
     const { data: contextFields = [] } = useQuery({
         queryKey: ["context-fields"],
-        queryFn: () => getContextFields(),
+        queryFn: () => getContexts(),
     })
 
     useEffect(() => {

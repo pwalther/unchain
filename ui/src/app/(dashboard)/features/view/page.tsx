@@ -46,7 +46,7 @@ import { Feature, Strategy, StrategyDefinition, Environment, Variant } from "@/t
 import { StrategyDialog } from "@/features/features/components/strategy-dialog"
 import { EditEnvironmentDrawer } from "@/features/environments/components/edit-environment-drawer"
 import { FeatureVariantsDialog } from "@/features/features/components/feature-variants-dialog"
-import { getContextFields } from "@/features/context/actions"
+import { getContexts } from "@/features/contexts/actions"
 
 function FeatureDetailsContent() {
     const searchParams = useSearchParams()
@@ -101,7 +101,7 @@ function FeatureDetailsContent() {
 
     const { data: contextFields = [] } = useQuery({
         queryKey: ["context-fields"],
-        queryFn: getContextFields,
+        queryFn: getContexts,
     })
 
     useEffect(() => {
