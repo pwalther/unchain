@@ -1,0 +1,3 @@
+unchain:
+  sse:
+    enabled: true

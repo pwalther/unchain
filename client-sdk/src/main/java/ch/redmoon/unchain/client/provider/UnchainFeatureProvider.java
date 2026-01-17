@@ -3,16 +3,12 @@ package ch.redmoon.unchain.client.provider;
 import ch.redmoon.unchain.client.UnchainClient;
 import ch.redmoon.unchain.client.UnchainContext;
 import ch.redmoon.unchain.client.model.Variant;
-import ch.redmoon.unchain.client.model.VariantPayload;
 import dev.openfeature.sdk.*;
 import dev.openfeature.sdk.exceptions.GeneralError;
 import lombok.RequiredArgsConstructor;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @RequiredArgsConstructor
-public class UnchainFeatureProvider implements FeatureProvider {
+public class UnchainFeatureProvider extends EventProvider implements FeatureProvider {
 
     private final UnchainClient unchainClient;
 
@@ -20,6 +16,18 @@ public class UnchainFeatureProvider implements FeatureProvider {
     public Metadata getMetadata() {
         return () -> "UnchainFeatureProvider";
     }
+
+    // ... (rest of methods unchanged until initialize)
+
+    @Override
+    public void initialize(EvaluationContext evaluationContext) throws Exception {
+        unchainClient.addChangeListener(projectId -> {
+            emit(ProviderEvent.PROVIDER_CONFIGURATION_CHANGED,
+                    ProviderEventDetails.builder().message("Features updated for project " + projectId).build());
+        });
+    }
+
+    // ... (rest of methods)
 
     @Override
     public ProviderEvaluation<Boolean> getBooleanEvaluation(String key, Boolean defaultValue, EvaluationContext ctx) {
@@ -111,11 +119,6 @@ public class UnchainFeatureProvider implements FeatureProvider {
     @Override
     public void shutdown() {
         unchainClient.shutdown();
-    }
-
-    @Override
-    public void initialize(EvaluationContext evaluationContext) throws Exception {
-        // Already initialized
     }
 
     private UnchainContext mapContext(EvaluationContext ctx) {

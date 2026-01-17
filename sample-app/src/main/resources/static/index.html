@@ -97,6 +97,73 @@
     </div>
 
     <script>
+        let eventSource = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial check and stream setup on load
+            checkFeature();
+        });
+
+        function setupStream(userId, project, environment, feature) {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            const params = new URLSearchParams({
+                userId, project, environment, name: feature
+            });
+
+            eventSource = new EventSource(`/api/feature-check/stream?${params.toString()}`);
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    updateUI(data, true);
+                } catch (e) {
+                    console.error('Failed to parse SSE', e);
+                }
+            };
+            
+            eventSource.onerror = (err) => {
+                console.warn('SSE connection lost, will retry automatically', err);
+            };
+        }
+
+        function updateUI(data, isLiveUpdate = false) {
+             const resultDiv = document.getElementById('result');
+             const statusBadge = document.getElementById('statusBadge');
+             const variantName = document.getElementById('variantName');
+             const payload = document.getElementById('payload');
+
+             resultDiv.classList.remove('hidden');
+             
+             // Ensure visible if it was hidden
+             resultDiv.style.opacity = '1';
+             resultDiv.style.filter = 'none';
+
+             if (isLiveUpdate) {
+                // Visual flash effect for live update
+                resultDiv.classList.remove('ring-4', 'ring-emerald-500/50', 'ring-offset-2', 'ring-offset-slate-900');
+                void resultDiv.offsetWidth; // trigger reflow
+                resultDiv.classList.add('transition-all', 'duration-500', 'ring-4', 'ring-emerald-500/50', 'ring-offset-2', 'ring-offset-slate-900');
+                
+                setTimeout(() => {
+                    resultDiv.classList.remove('ring-4', 'ring-emerald-500/50', 'ring-offset-2', 'ring-offset-slate-900');
+                }, 1000);
+             }
+
+             if (data.enabled) {
+                 statusBadge.textContent = 'Enabled';
+                 statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]';
+             } else {
+                 statusBadge.textContent = 'Disabled';
+                 statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-500/10 text-pink-400 border border-pink-500/20';
+             }
+
+             variantName.textContent = data.variantName || 'None';
+             payload.textContent = data.payload ? (typeof data.payload === 'object' ? JSON.stringify(data.payload, null, 2) : data.payload) : 'No payload';
+        }
+
         async function checkFeature() {
             const btn = document.getElementById('checkBtn');
             const btnText = document.getElementById('btnText');
@@ -107,9 +174,9 @@
             const feature = document.getElementById('feature').value;
 
             const resultDiv = document.getElementById('result');
-            const statusBadge = document.getElementById('statusBadge');
-            const variantName = document.getElementById('variantName');
-            const payload = document.getElementById('payload');
+            
+            // Re-connect stream with new params
+            setupStream(userId, project, environment, feature);
 
             // Feedback: loading state
             btn.disabled = true;
@@ -129,24 +196,13 @@
                 // Small delay to ensure the user sees the "checking" state
                 await new Promise(r => setTimeout(r, 400));
 
-                resultDiv.classList.remove('hidden');
-
                 // Animation loop
                 resultDiv.style.opacity = '1';
                 resultDiv.style.filter = 'none';
                 void resultDiv.offsetWidth; // trigger reflow
                 resultDiv.classList.add('animate-in', 'fade-in', 'slide-in-from-top-4');
 
-                if (data.enabled) {
-                    statusBadge.textContent = 'Enabled';
-                    statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]';
-                } else {
-                    statusBadge.textContent = 'Disabled';
-                    statusBadge.className = 'px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-pink-500/10 text-pink-400 border border-pink-500/20';
-                }
-
-                variantName.textContent = data.variantName || 'None';
-                payload.textContent = data.payload ? (typeof data.payload === 'object' ? JSON.stringify(data.payload, null, 2) : data.payload) : 'No payload';
+                updateUI(data);
 
             } catch (error) {
                 console.error('Error:', error);

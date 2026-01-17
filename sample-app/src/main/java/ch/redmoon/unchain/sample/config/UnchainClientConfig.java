@@ -25,7 +25,8 @@ public class UnchainClientConfig {
 
     @Bean
     public UnchainClient unchainClient() {
-        // In a real application, the token would be retrieved from an Identity Provider (IdP)
+        // In a real application, the token would be retrieved from an Identity Provider
+        // (IdP)
         // using Client Credentials flow or a similar OIDC/OAuth2 mechanism.
         // For the demo profile, we return a mock token.
         Supplier<String> tokenSupplier = () -> {
@@ -39,6 +40,7 @@ public class UnchainClientConfig {
                 .environment(environment)
                 .projects(List.of(project))
                 .refreshIntervalSeconds(15) // Frequent refresh for demo purposes
+                .sseEnabled(true)
                 .build();
 
         return new UnchainClient(config);

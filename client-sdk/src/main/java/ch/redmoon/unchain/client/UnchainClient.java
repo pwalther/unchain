@@ -35,6 +35,7 @@ public class UnchainClient {
     private static final Logger log = LoggerFactory.getLogger(UnchainClient.class);
     private static final String VERSION = loadVersion();
     private long currentBackoff = 10_000;
+    private final List<java.util.function.Consumer<String>> changeListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private static String loadVersion() {
         try (var is = UnchainClient.class.getResourceAsStream("/unchain-client.properties")) {
@@ -147,6 +148,7 @@ public class UnchainClient {
                                                     featureCache.put(projectId + ":" + f.getName(), f);
                                                 }
                                                 log.debug("Updated features from SSE for project: {}", projectId);
+                                                notifyListeners(projectId);
                                             }
                                         } catch (Exception e) {
                                             log.error("Failed to parse SSE data", e);
@@ -224,6 +226,7 @@ public class UnchainClient {
                                 featureCache.put(projectId + ":" + f.getName(), f);
                             }
                             log.info("Refreshed {} features for project: {}", fr.getFeatures().size(), projectId);
+                            notifyListeners(projectId);
                         } else {
                             log.debug("No features found for project: {}", projectId);
                         }
@@ -491,5 +494,20 @@ public class UnchainClient {
         } catch (Exception e) {
             log.error("Error sending metrics", e);
         }
+    }
+
+    public Runnable addChangeListener(java.util.function.Consumer<String> listener) {
+        changeListeners.add(listener);
+        return () -> changeListeners.remove(listener);
+    }
+
+    private void notifyListeners(String projectId) {
+        changeListeners.forEach(listener -> {
+            try {
+                listener.accept(projectId);
+            } catch (Exception e) {
+                log.error("Error invoking change listener", e);
+            }
+        });
     }
 }
