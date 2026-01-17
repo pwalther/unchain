@@ -34,6 +34,7 @@ public class UnchainClient {
     private final ScheduledExecutorService scheduler;
     private static final Logger log = LoggerFactory.getLogger(UnchainClient.class);
     private static final String VERSION = loadVersion();
+    private long currentBackoff = 10_000;
 
     private static String loadVersion() {
         try (var is = UnchainClient.class.getResourceAsStream("/unchain-client.properties")) {
@@ -130,7 +131,11 @@ public class UnchainClient {
                         }
 
                         if (response.statusCode() == 200) {
-                            log.info("SSE Connected to project: {}", projectId);
+                            currentBackoff = Math.max(10_000, currentBackoff / 2); // Decay backoff on success (AIMD:
+                                                                                   // add 25% on error, 50% decrease on
+                                                                                   // success)
+                            log.info("SSE Connected to project: {}. Backoff adjusted to {} s", projectId,
+                                    currentBackoff / 1000);
                             response.body().forEach(line -> {
                                 if (line.startsWith("data:")) {
                                     String data = line.substring(5).trim();
@@ -149,6 +154,11 @@ public class UnchainClient {
                                     }
                                 }
                             });
+                        } else if (response.statusCode() == 429) {
+                            long nextBackoff = (long) (currentBackoff * 1.25);
+                            currentBackoff = Math.min(nextBackoff, 60 * 60 * 1000); // Max 60 minutes
+                            log.warn("Server returned 429 Too Many Requests. Increasing backoff to {} s",
+                                    currentBackoff / 1000);
                         } else {
                             log.warn("SSE Connection failed with status: {}", response.statusCode());
                         }
@@ -169,9 +179,9 @@ public class UnchainClient {
                 break;
             }
 
-            // Reconnect backoff - 10 seconds
+            // Reconnect backoff - 10 seconds default, exponential if 429
             try {
-                Thread.sleep(10_000);
+                Thread.sleep(currentBackoff);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
