@@ -56,4 +56,7 @@ public class ChangeRequestEntity {
 
     @Column(name = "applied_at")
     private java.time.OffsetDateTime appliedAt;
+
+    @Column(name = "created_by")
+    private String createdBy;
 }

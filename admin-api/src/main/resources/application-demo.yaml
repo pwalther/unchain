@@ -1,3 +1,5 @@
 unchain:
   sse:
     enabled: true
+  change-requests:
+    enforce-different-approvers: false

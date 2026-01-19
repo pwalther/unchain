@@ -34,12 +34,14 @@ import ch.redmoon.unchain.event.UnchainEventPublisher;
 import ch.redmoon.unchain.service.ChangeRequestService;
 import ch.redmoon.unchain.exception.BusinessRuleViolationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +59,9 @@ public class ChangeRequestsController implements ChangeRequestsApi {
     private final ChangeRequestService changeRequestService;
     private final UnchainEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+
+    @Value("${unchain.change-requests.enforce-different-approvers:true}")
+    private boolean enforceDifferentApprovers;
 
     @Override
     public ResponseEntity<List<ChangeRequestConfig>> getChangeRequestConfig(String projectId) {
@@ -90,7 +95,8 @@ public class ChangeRequestsController implements ChangeRequestsApi {
         entity.setTitle(request.getTitle());
         entity.setEnvironment(request.getEnvironment());
         entity.setProjectId(projectId);
-        entity.setState("Draft"); // Start as Draft
+        entity.setState(ChangeRequest.StateEnum.DRAFT.getValue()); // Start as Draft
+        entity.setCreatedBy(getCurrentUsername());
 
         EnvironmentEntity env = environmentRepository.findById(request.getEnvironment()).orElse(null);
         entity.setMinApprovals(env != null ? env.getRequiredApprovals() : 0);
@@ -152,8 +158,13 @@ public class ChangeRequestsController implements ChangeRequestsApi {
         ChangeRequestEntity cr = changeRequestRepository.findById(changeRequestId)
                 .orElseThrow(() -> new BusinessRuleViolationException("Change request not found"));
 
-        if (!"Draft".equals(cr.getState())) {
-            throw new BusinessRuleViolationException("Changes can only be added to Draft change requests");
+        if (!ChangeRequest.StateEnum.DRAFT.getValue().equals(cr.getState())) {
+            if (ChangeRequest.StateEnum.IN_REVIEW.getValue().equals(cr.getState())) {
+                cr.setState(ChangeRequest.StateEnum.DRAFT.getValue());
+                changeRequestRepository.save(cr);
+            } else {
+                throw new BusinessRuleViolationException("Changes can only be added to Draft change requests");
+            }
         }
 
         List<ChangeRequestChangeEntity> existingChanges = changeRequestChangeRepository
@@ -208,7 +219,8 @@ public class ChangeRequestsController implements ChangeRequestsApi {
             UpdateChangeRequestStateRequest updateRequest) {
         changeRequestRepository.findById(changeRequestId).ifPresent(cr -> {
             String newState = updateRequest.getState().getValue();
-            if ("Applied".equals(newState) && !"Applied".equals(cr.getState())) {
+            if (ChangeRequest.StateEnum.APPLIED.getValue().equals(newState)
+                    && !ChangeRequest.StateEnum.APPLIED.getValue().equals(cr.getState())) {
                 changeRequestService.applyChangeRequest(changeRequestId);
             } else {
                 cr.setState(newState);
@@ -222,18 +234,24 @@ public class ChangeRequestsController implements ChangeRequestsApi {
     @Override
     public ResponseEntity<Void> approveChangeRequest(String projectId, Integer changeRequestId) {
         changeRequestRepository.findById(changeRequestId).ifPresent(cr -> {
-            if ("Draft".equals(cr.getState())) {
+            if (ChangeRequest.StateEnum.DRAFT.getValue().equals(cr.getState())) {
                 throw new BusinessRuleViolationException(
                         "Cannot approve a Draft change request. Please submit it for review first.");
             }
+
+            if (getCurrentUsername().equals(cr.getCreatedBy()) && enforceDifferentApprovers) {
+                throw new BusinessRuleViolationException("You cannot approve your own change request.");
+            }
+
             if (cr.getScheduledAt() == null) {
                 // If no schedule, apply immediately
-                cr.setState("Approved"); // Technicality, applyChangeRequest checks for Approved
+                cr.setState(ChangeRequest.StateEnum.APPROVED.getValue()); // Technicality, applyChangeRequest checks for
+                                                                          // Approved
                 changeRequestRepository.save(cr);
                 changeRequestService.applyChangeRequest(changeRequestId);
                 eventPublisher.publishChangeRequestUpdated(cr, "ApprovedAndApplied");
             } else {
-                cr.setState("Approved");
+                cr.setState(ChangeRequest.StateEnum.APPROVED.getValue());
                 changeRequestRepository.save(cr);
                 eventPublisher.publishChangeRequestUpdated(cr, "Approved");
             }
@@ -252,7 +270,7 @@ public class ChangeRequestsController implements ChangeRequestsApi {
         dto.setScheduledAt(entity.getScheduledAt());
 
         ChangeRequestCreatedBy createdBy = new ChangeRequestCreatedBy();
-        createdBy.setUsername("admin"); // Mock user
+        createdBy.setUsername(entity.getCreatedBy());
         dto.setCreatedBy(createdBy);
 
         List<ChangeRequestChangeEntity> changes = changeRequestChangeRepository.findByChangeRequestId(entity.getId());
@@ -278,5 +296,13 @@ public class ChangeRequestsController implements ChangeRequestsApi {
         dto.setFeatures(features);
 
         return dto;
+    }
+
+    private String getCurrentUsername() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            return auth.getName();
+        }
+        return "system";
     }
 }
