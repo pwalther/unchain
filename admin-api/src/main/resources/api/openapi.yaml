@@ -296,6 +296,7 @@ paths:
           $ref: "#/components/responses/NotFoundError"
     patch:
       operationId: updateFeature
+      x-required-permissions: [FEATURE_UPDATE]
       summary: Update a feature toggle
       tags: [Features]
       parameters:
@@ -344,6 +345,7 @@ paths:
     post:
       operationId: createEnvironment
       summary: Creates a new environment
+      x-required-permissions: [ENVIRONMENT_CREATE]
       description: |-
         Uses the details provided in the payload to create a new environment
       requestBody:
@@ -727,6 +729,7 @@ paths:
   /metrics:
     post:
       operationId: reportMetrics
+      x-required-permissions: [METRICS_REPORT]
       summary: Report feature flag usage metrics
       tags: [Metrics]
       requestBody:
@@ -742,6 +745,7 @@ paths:
   /projects/{projectId}/metrics:
     get:
       operationId: getProjectMetrics
+      x-required-permissions: [METRICS_READ]
       summary: Get metrics for a project
       tags: [Metrics]
       parameters:
@@ -960,6 +964,7 @@ paths:
                       $ref: "#/components/schemas/Segment"
     post:
       operationId: createSegment
+      x-required-permissions: [SEGMENT_CREATE]
       summary: Create a new segment
       tags: [Segments]
       requestBody:
@@ -1020,6 +1025,7 @@ paths:
   /contexts:
     get:
       operationId: listContextFields
+      x-required-permissions: [CONTEXT_READ]
       summary: Get all context fields
       tags: [Context]
       responses:
@@ -1033,6 +1039,7 @@ paths:
                   $ref: "#/components/schemas/ContextField"
     post:
       operationId: createContextField
+      x-required-permissions: [CONTEXT_CREATE]
       summary: Create a context field
       tags: [Context]
       requestBody:
@@ -1048,6 +1055,7 @@ paths:
   /contexts/{contextField}:
     put:
       operationId: updateContextField
+      x-required-permissions: [CONTEXT_UPDATE]
       summary: Update a context field
       tags: [Context]
       parameters:
@@ -1067,6 +1075,7 @@ paths:
           description: Context field updated
     delete:
       operationId: deleteContextField
+      x-required-permissions: [CONTEXT_DELETE]
       summary: Delete a context field
       tags: [Context]
       parameters:
@@ -1084,6 +1093,7 @@ paths:
   /contexts/{contextField}/legal-values:
     post:
       operationId: addLegalValueToContextField
+      x-required-permissions: [CONTEXT_UPDATE]
       summary: Add a legal value to a context field
       tags: [Context]
       parameters:
@@ -1105,6 +1115,7 @@ paths:
   /contexts/{contextField}/legal-values/{value}:
     delete:
       operationId: removeLegalValueFromContextField
+      x-required-permissions: [CONTEXT_UPDATE]
       summary: Remove a legal value from a context field
       tags: [Context]
       parameters:
@@ -1128,6 +1139,7 @@ paths:
   /strategies:
     get:
       operationId: listStrategies
+      x-required-permissions: [STRATEGY_READ]
       summary: List all strategy definitions
       tags: [Strategies]
       responses:
@@ -1144,6 +1156,7 @@ paths:
                       $ref: "#/components/schemas/Strategy"
     post:
       operationId: createStrategy
+      x-required-permissions: [STRATEGY_CREATE]
       summary: Create a new strategy definition
       tags: [Strategies]
       requestBody:
@@ -1159,6 +1172,7 @@ paths:
   /strategies/{name}:
     put:
       operationId: updateStrategyDefinition
+      x-required-permissions: [STRATEGY_UPDATE]
       summary: Update a strategy definition
       tags: [Strategies]
       parameters:
@@ -1185,6 +1199,7 @@ paths:
   /tags:
     get:
       operationId: listTags
+      x-required-permissions: [TAGS_READ]
       summary: List all tags
       tags: [FeatureTag]
       responses:
@@ -1201,6 +1216,7 @@ paths:
                       $ref: "#/components/schemas/FeatureTag"
     post:
       operationId: createTag
+      x-required-permissions: [TAGS_CREATE]
       summary: Create a new tag
       tags: [FeatureTag]
       requestBody:
@@ -1216,6 +1232,7 @@ paths:
   /tag-types:
     get:
       operationId: listTagTypes
+      x-required-permissions: [TAGS_READ]
       summary: List all tag types
       tags: [FeatureTag]
       responses:
@@ -1231,12 +1248,14 @@ paths:
                     items:
                       $ref: "#/components/schemas/TagType"
 
-  /features/{featureName}/tags:
+  /projects/{projectId}/features/{featureName}/tags:
     post:
       operationId: addTagToFeature
+      x-required-permissions: [FEATURE_UPDATE]
       summary: Add a tag to a feature
       tags: [FeatureTag]
       parameters:
+        - $ref: "#/components/parameters/projectId"
         - $ref: "#/components/parameters/featureName"
       requestBody:
         required: true
@@ -1247,6 +1266,35 @@ paths:
       responses:
         "201":
           description: Tag added to feature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeatureTag"
+
+  /projects/{projectId}/features/{featureName}/tags/{type}/{value}:
+    delete:
+      operationId: removeTagFromFeature
+      x-required-permissions: [FEATURE_UPDATE]
+      summary: Remove a tag from a feature
+      tags: [FeatureTag]
+      parameters:
+        - $ref: "#/components/parameters/projectId"
+        - $ref: "#/components/parameters/featureName"
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The type of the tag
+        - name: value
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The value of the tag
+      responses:
+        "200":
+          description: Tag removed from feature
 
 # =========================================================================
 # COMPONENTS

@@ -186,15 +186,7 @@ function FeaturesPageContent() {
                 )
             ),
         },
-        {
-            accessorKey: "lastSeenAt",
-            header: "Last Seen",
-            cell: ({ row }) => (
-                <span className="text-[10px] text-muted-foreground">
-                    {row.original.lastSeenAt ? new Date(row.original.lastSeenAt).toLocaleString() : "Never"}
-                </span>
-            ),
-        },
+
         {
             id: "actions",
             cell: ({ row }) => (
