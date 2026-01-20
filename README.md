@@ -75,7 +75,6 @@ Manage the different stages of your deployment pipeline in the **Environments** 
 
 -   **Setup**: Define environments like Development, Staging, and Production.
 -   **Protection**: Mark environments as "Protected" to enforce Change Request workflows and prevent accidental changes.
--   **SDK Keys**: Manage API keys for your SDKs to connect to specific environments.
 
 ## 8. Contexts
 
