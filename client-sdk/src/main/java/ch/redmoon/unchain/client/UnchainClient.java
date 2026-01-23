@@ -35,6 +35,7 @@ public class UnchainClient {
     private static final Logger log = LoggerFactory.getLogger(UnchainClient.class);
     private static final String VERSION = loadVersion();
     private long currentBackoff = 10_000;
+    private volatile int currentPollIntervalSeconds;
     private final List<java.util.function.Consumer<String>> changeListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     private static String loadVersion() {
@@ -58,6 +59,7 @@ public class UnchainClient {
         this.config = config;
         this.httpClient = httpClient;
         this.objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
+        this.currentPollIntervalSeconds = (int) config.getRefreshIntervalSeconds();
 
         registerEvaluator(new DefaultStrategyEvaluator());
         registerEvaluator(new GradualRolloutStrategyEvaluator());
@@ -76,7 +78,8 @@ public class UnchainClient {
             return t;
         });
 
-        this.scheduler.scheduleAtFixedRate(this::refresh, 0, config.getRefreshIntervalSeconds(), TimeUnit.SECONDS);
+        // Use recursive scheduling to allow dynamic interval updates
+        this.scheduler.schedule(this::runRefreshLoop, 0, TimeUnit.SECONDS);
         this.scheduler.scheduleAtFixedRate(this::sendMetrics, 30, 10 * 60, TimeUnit.SECONDS);
 
         if (config.isWaitforInit()) {
@@ -91,6 +94,20 @@ public class UnchainClient {
 
         if (config.isSseEnabled()) {
             startSseConnection();
+        }
+    }
+
+    private void runRefreshLoop() {
+        if (scheduler.isShutdown())
+            return;
+        try {
+            refresh();
+        } catch (Exception e) {
+            log.error("Unexpected error in refresh loop", e);
+        } finally {
+            if (!scheduler.isShutdown()) {
+                scheduler.schedule(this::runRefreshLoop, currentPollIntervalSeconds, TimeUnit.SECONDS);
+            }
         }
     }
 
@@ -218,6 +235,21 @@ public class UnchainClient {
                 HttpRequest request = requestBuilder.build();
 
                 HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+                // Check for dynamic poll interval update
+                response.headers().firstValue("X-Unchain-Poll-Interval").ifPresent(val -> {
+                    try {
+                        int newInterval = Integer.parseInt(val);
+                        if (newInterval > 0 && newInterval != this.currentPollIntervalSeconds) {
+                            log.info("Updating poll interval from {} to {} seconds based on server header",
+                                    this.currentPollIntervalSeconds, newInterval);
+                            this.currentPollIntervalSeconds = newInterval;
+                        }
+                    } catch (NumberFormatException e) {
+                        log.debug("Invalid X-Unchain-Poll-Interval header value: {}", val);
+                    }
+                });
+
                 if (response.statusCode() == 200) {
                     try {
                         FeatureResponse fr = objectMapper.readValue(response.body(), FeatureResponse.class);

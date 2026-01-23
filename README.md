@@ -3,12 +3,18 @@
 Unchain is a feature flag management platform that allows you to manage your feature flags in a centralized and secure way. It provides a web UI and an API to manage your feature flags. It comes with a client sdk for java and a sample app to show how to use the API.
 
 
+
+# Documentation
+See the [admin-api](admin-api/README.MD) and [client-sdk](client-sdk/README.MD) for more information how to adapt to your needs.
+There are screenshots [screenshots](documentation/screenshots) and documentation on the underlying concepts used by unchain in the [documentation](documentation) folder.
+
+
 # API
-openapi spec: openapi.yaml
+OpenAPI specification: [openapi.yaml](admin-api/src/main/resources/openapi.yaml)
 
 # Sample
 
-There is a sample app in the sample-app folder that shows how to use the API.
+There is a sample app in the [sample-app](sample-app) folder that shows how to use the API.
 
 # UI
 

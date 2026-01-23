@@ -25,14 +25,14 @@ The evaluation process follows these steps:
 ### Step 1: Inputs
 To evaluate a rollout, we need:
 -   **Stickiness Key (`stickinessId`)**: The unique identifier for the subject (e.g., User ID, Session ID, IP Address).
--   **Group ID (`groupId`)**: Typically the **Feature Name** or a specific ID assigned to the rollout strategy. This ensures that a user who is in the "10%" bucket for *Feature A* is not arguably correlated to be in the "10%" bucket for *Feature B*.
+-   **Context Salt (`groupId`)**: (Sometimes referred to as Group ID). This is typically the **Feature Name** or a specific ID assigned to the rollout strategy. It acts as a **salt** for the hashing function to ensure that a user who is in the "10%" bucket for *Feature A* is not statistically likely to be in the "10%" bucket for *Feature B*, assuming independent probabilities are desired. It effectively "groups" the hash buckets uniquely for this feature.
 -   **Rollout Percentage (`p`)**: An integer from 0 to 100.
 
 ### Step 2: Construct the Hashing Key
 We concatenate the Group ID and the Stickiness Key with a colon separator:
 
 ```text
-data = groupId + ":" + stickinessId
+data = contextSalt + ":" + stickinessId
 ```
 
 *Example: "new-login-flow:user-12345"*
@@ -66,7 +66,7 @@ isEnabled = normalized <= rolloutPercentage;
 
 **Stickiness** is the property that ensures the same user always gets the same result.
 
-Because the calculation relies *only* on the `stickinessId` (which shouldn't change for a user) and the `groupId` (which is constant for the feature), the `Murmur3` hash will always return the exact same number.
+Because the calculation relies *only* on the `stickinessId` (which shouldn't change for a user) and the `contextSalt` (which is constant for the feature), the `Murmur3` hash will always return the exact same number.
 
 -   **User A (`user-12345`)** hashes to **Bucket 42**.
 -   As long as the rollout percentage is **42% or higher**, User A sees the feature.

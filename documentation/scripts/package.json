@@ -1,0 +1,15 @@
+{
+    "name": "unchain-docs-scripts",
+    "version": "1.0.0",
+    "description": "Scripts for generating documentation screenshots",
+    "type": "module",
+    "scripts": {
+        "generate-screenshots": "node screenshot-generator.js"
+    },
+    "dependencies": {
+        "playwright": "^1.41.0",
+        "wait-on": "^7.2.0",
+        "tree-kill": "^1.2.2",
+        "concurrently": "^8.2.0"
+    }
+}

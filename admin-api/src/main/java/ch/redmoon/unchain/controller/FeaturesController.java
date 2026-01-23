@@ -53,6 +53,9 @@ public class FeaturesController implements FeaturesApi {
     private final ch.redmoon.unchain.repository.ChangeRequestRepository changeRequestRepository;
     private final UnchainEventPublisher eventPublisher;
 
+    @Value("${unchain.sdk.poll-interval-seconds:60}")
+    private int pollIntervalSeconds;
+
     @Override
     public ResponseEntity<GetFeaturesByProject200Response> getFeaturesByProject(String projectId) {
         List<FeatureEntity> entities = featureRepository.findByProjectId(projectId);
@@ -61,7 +64,10 @@ public class FeaturesController implements FeaturesApi {
         GetFeaturesByProject200Response response = new GetFeaturesByProject200Response();
         response.setFeatures(dtos);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok()
+                .header("Cache-Control", "max-age=" + pollIntervalSeconds)
+                .header("X-Unchain-Poll-Interval", String.valueOf(pollIntervalSeconds))
+                .body(response);
     }
 
     @Override

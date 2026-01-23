@@ -23,8 +23,11 @@ import ch.redmoon.unchain.api.model.ListTags200Response;
 import ch.redmoon.unchain.api.model.TagType;
 import ch.redmoon.unchain.entity.TagEntity;
 import ch.redmoon.unchain.entity.TagTypeEntity;
+import ch.redmoon.unchain.entity.FeatureTagEntity;
+import ch.redmoon.unchain.entity.FeatureTagId;
 import ch.redmoon.unchain.repository.TagRepository;
 import ch.redmoon.unchain.repository.TagTypeRepository;
+import ch.redmoon.unchain.repository.FeatureTagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -41,6 +44,7 @@ public class TagsController implements FeatureTagApi {
 
     private final TagRepository tagRepository;
     private final TagTypeRepository tagTypeRepository;
+    private final FeatureTagRepository featureTagRepository;
 
     @Override
     public ResponseEntity<ListTags200Response> listTags() {
@@ -75,20 +79,28 @@ public class TagsController implements FeatureTagApi {
     }
 
     @Override
-    public ResponseEntity<Void> addTagToFeature(String featureName, FeatureTag featureTag) {
-        // This usually involves a linking table or updating feature.
-        // For now, let's assume we just ensure the tag exists.
-        // Real implementation would link Feature -> Tag.
-        // Assuming this endpoint is just creating the tag association which might be
-        // implicit or handled elsewhere.
-        // Or throwing Not Implemented if complex.
-        // The previous implementation had stub logic or handled it.
-        // Given I don't have FeatureTag repository (link), I'll just save the tag.
-        TagEntity entity = new TagEntity();
-        entity.setType(featureTag.getType());
-        entity.setTag_value(featureTag.getValue());
-        tagRepository.save(entity);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<FeatureTag> addTagToFeature(String projectId, String featureName, FeatureTag featureTag) {
+        // Ensure tag exists
+        TagEntity tagEntity = new TagEntity();
+        tagEntity.setType(featureTag.getType());
+        tagEntity.setTag_value(featureTag.getValue());
+        tagRepository.save(tagEntity);
+
+        // Link to feature
+        FeatureTagEntity featureTagEntity = new FeatureTagEntity();
+        featureTagEntity.setFeatureName(featureName);
+        featureTagEntity.setTagType(featureTag.getType());
+        featureTagEntity.setTagValue(featureTag.getValue());
+        featureTagRepository.save(featureTagEntity);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(featureTag);
+    }
+
+    @Override
+    public ResponseEntity<Void> removeTagFromFeature(String projectId, String featureName, String type, String value) {
+        FeatureTagId id = new FeatureTagId(featureName, type, value);
+        featureTagRepository.deleteById(id);
+        return ResponseEntity.ok().build();
     }
 
     private FeatureTag mapToDto(TagEntity entity) {

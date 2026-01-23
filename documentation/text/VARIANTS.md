@@ -20,7 +20,7 @@ When an application requests a variant, the Unchain SDK performs a deterministic
 
 ## The Logic of Weights (Scale 0-1000)
 
-In Unchain, the total weight for all variants of a feature or strategy should sum up to **1000**. While many systems use a base of 100 (percentage), Unchain uses 1000 for several critical reasons:
+In Unchain, the total weight for all variants of a feature or strategy should sum up to **1000**. While many systems use a base of 100 (percentage), Unchain uses 1000 for three reasons:
 
 ### A. High Precision (The 0.1% Increment)
 A scale of 100 only allows for 1% increments. For high-traffic applications, a 1% change might affect hundreds of thousands of users.

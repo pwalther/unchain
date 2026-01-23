@@ -192,70 +192,7 @@ unchain:
  
  Note: Entities (Projects, Environments, Features) referenced in a pending change request (**Draft**, **In review**, or **Approved**) cannot be renamed, archived, or deleted until the request is finalized.
  
- ## Audit Logging
-
-All modifications to core entities (Features, Projects, Strategies, Change Requests, Segments, Environments) are automatically logged in the `audit_log` table. Each entry includes:
-- Entity Type and ID
-- Action performed (CREATED, UPDATED, DELETED, ENABLED, DISABLED)
-- User who performed the action
-- Timestamp
-- JSON representation of the entity state
-
-### Audit Log Integrity Protection
-
-Unchain supports **optional cryptographic integrity protection** for audit logs using HMAC-SHA256 signatures and hash chains. This feature detects tampering and deletion of audit log entries.
-
-#### Enabling Integrity Checking
-
-Add to your `application.yaml`:
-
-```yaml
-unchain:
-  audit:
-    integrity:
-      enabled: true
-      secret: "your-secret-key-minimum-32-characters-change-in-production"
-```
-
-> ⚠️ **Important**: Use a strong, randomly generated secret key in production. Store it securely using environment variables or a secret management solution.
-
-#### Custom Secret Providers
-
-For production environments, implement the `SecretProvider` interface to integrate with your secret management solution:
-
-```java
-@Component
-public class VaultSecretProvider implements SecretProvider {
-    @Override
-    public byte[] getAuditLogSecret() {
-        // Retrieve from HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, etc.
-        return vaultClient.getSecret("audit-log-hmac-key").getBytes(StandardCharsets.UTF_8);
-    }
-}
-```
-
-Spring will automatically detect and use your custom implementation instead of the default YAML-based provider.
-
-#### How It Works
-
-1. **HMAC Signatures**: Each audit log entry is signed using HMAC-SHA256, including all fields (entity type, ID, action, timestamp, etc.)
-2. **Hash Chains**: Each entry links to the previous entry's hash, creating a tamper-evident chain
-3. **Verification**: The History UI displays integrity status for each entry with visual indicators
-
-#### Security Features
-
-✅ **Tampering Detection** - Any modification to audit log fields is detected via signature verification  
-✅ **Deletion Detection** - Hash chains detect when entries are deleted from the middle of the log  
-✅ **Cryptographically Secure** - HMAC-SHA256 provides strong integrity guarantees
-
-#### Limitations
-
-❌ **Not Non-Repudiation** - Anyone with the secret key can create valid signatures  
-❌ **No Protection Against Complete Database Deletion** - If the entire database is deleted, there's no log to verify  
-❌ **Requires Secure Key Management** - The secret key must be protected; if compromised, integrity is lost
-
-> 💡 **Recommendation**: For compliance requirements, consider shipping logs to immutable external storage (e.g., AWS CloudTrail, Splunk) or implementing database-level audit trails in addition to this feature.
-
+ 
 #### Housekeeping Integration
 
 When the housekeeping scheduler deletes old audit logs, it automatically "anchors" the hash chain by resetting the `previousHash` of the oldest remaining entry. This prevents false chain break warnings while maintaining integrity for retained logs.
@@ -359,6 +296,72 @@ public class MyCustomSender implements FeatureEventSender {
 ```
 
 If your sender requires dependency injection (e.g., `JmsTemplate`), define it as a Bean or ensure it has a no-args constructor if relying on the fallback instantiation. Using `@Component` and letting Spring manage it is recommended.
+
+
+## Audit Logging
+
+All modifications to core entities (Features, Projects, Strategies, Change Requests, Segments, Environments) are automatically logged in the `audit_log` table. Each entry includes:
+- Entity Type and ID
+- Action performed (CREATED, UPDATED, DELETED, ENABLED, DISABLED)
+- User who performed the action
+- Timestamp
+- JSON representation of the entity state
+
+### Audit Log Integrity Protection
+
+Unchain supports **optional cryptographic integrity protection** for audit logs using HMAC-SHA256 signatures and hash chains. This feature detects tampering and deletion of audit log entries.
+
+#### Enabling Integrity Checking
+
+Add to your `application.yaml`:
+
+```yaml
+unchain:
+  audit:
+    integrity:
+      enabled: true
+      secret: "your-secret-key-minimum-32-characters-change-in-production"
+```
+
+> ⚠️ **Important**: Use a strong, randomly generated secret key in production. Store it securely using environment variables or a secret management solution.
+
+#### Custom Secret Providers
+
+For production environments, implement the `SecretProvider` interface to integrate with your secret management solution:
+
+```java
+@Component
+public class VaultSecretProvider implements SecretProvider {
+    @Override
+    public byte[] getAuditLogSecret() {
+        // Retrieve from HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, etc.
+        return vaultClient.getSecret("audit-log-hmac-key").getBytes(StandardCharsets.UTF_8);
+    }
+}
+```
+
+Spring will automatically detect and use your custom implementation instead of the default YAML-based provider.
+
+#### How It Works
+
+1. **HMAC Signatures**: Each audit log entry is signed using HMAC-SHA256, including all fields (entity type, ID, action, timestamp, etc.)
+2. **Hash Chains**: Each entry links to the previous entry's hash, creating a tamper-evident chain
+3. **Verification**: The History UI displays integrity status for each entry with visual indicators
+
+#### Security Features
+
+✅ **Tampering Detection** - Any modification to audit log fields is detected via signature verification  
+✅ **Deletion Detection** - Hash chains detect when entries are deleted from the middle of the log  
+✅ **Cryptographically Secure** - HMAC-SHA256 provides strong integrity guarantees
+
+#### Limitations
+
+❌ **Not Non-Repudiation** - Anyone with the secret key can create valid signatures  
+❌ **No Protection Against Complete Database Deletion** - If the entire database is deleted, there's no log to verify  
+❌ **Requires Secure Key Management** - The secret key must be protected; if compromised, integrity is lost
+
+> 💡 **Recommendation**: For compliance requirements, consider shipping logs to immutable external storage (e.g., AWS CloudTrail, Splunk) or implementing database-level audit trails in addition to this feature.
+
 
 ## License
 
