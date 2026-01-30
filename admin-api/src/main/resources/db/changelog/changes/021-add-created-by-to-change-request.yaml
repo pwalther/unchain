@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-add-created-by-to-change-request
+      author: antigravity
+      changes:
+        - addColumn:
+            tableName: change_request
+            columns:
+              - column:
+                  name: created_by
+                  type: VARCHAR(255)

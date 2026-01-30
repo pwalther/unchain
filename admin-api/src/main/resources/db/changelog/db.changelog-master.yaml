@@ -65,3 +65,6 @@ databaseChangeLog:
         - include:
                   file: changes/020-audit-log-integrity.yaml
                   relativeToChangelogFile: true
+        - include:
+                  file: changes/021-add-created-by-to-change-request.yaml
+                  relativeToChangelogFile: true
