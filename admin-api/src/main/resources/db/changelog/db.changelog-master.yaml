@@ -68,3 +68,6 @@ databaseChangeLog:
         - include:
                   file: changes/021-add-created-by-to-change-request.yaml
                   relativeToChangelogFile: true
+        - include:
+                  file: changes/022-create-feature-tag-table.yaml
+                  relativeToChangelogFile: true

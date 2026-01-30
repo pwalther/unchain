@@ -1,0 +1,39 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-create-feature-tag-table
+      author: antigravity
+      changes:
+        - createTable:
+            tableName: feature_tag
+            columns:
+              - column:
+                  name: feature_name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_type
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tag_value
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: feature_tag
+            columnNames: feature_name, tag_type, tag_value
+            constraintName: pk_feature_tag
+        - addForeignKeyConstraint:
+            baseTableName: feature_tag
+            baseColumnNames: feature_name
+            referencedTableName: feature
+            referencedColumnNames: name
+            constraintName: fk_feature_tag_feature
+        - addForeignKeyConstraint:
+            baseTableName: feature_tag
+            baseColumnNames: tag_type, tag_value
+            referencedTableName: tag
+            referencedColumnNames: type, tag_value
+            constraintName: fk_feature_tag_tag

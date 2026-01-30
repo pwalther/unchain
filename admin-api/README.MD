@@ -43,6 +43,12 @@ The **Unchain Admin API** is the backend service for the Unchain feature flag ma
 mvn spring-boot:run
 ```
 
+Use the demo profile for a quickstart:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=demo
+```
+
 The API will be available at `http://localhost:8080`.
 
 ## Configuration
