@@ -21,6 +21,10 @@ public class Strategy {
     @JsonProperty("name")
     private String name;
 
+    @JsonProperty("constraints")
+    @Builder.Default
+    private List<Constraint> constraints = new ArrayList<>();
+
     @JsonProperty("parameters")
     @Builder.Default
     private List<StrategyParameter> parameters = new ArrayList<>();

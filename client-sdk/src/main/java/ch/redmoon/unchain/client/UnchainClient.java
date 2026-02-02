@@ -312,6 +312,12 @@ public class UnchainClient {
         }
 
         for (Strategy strategy : env.getStrategies()) {
+            // Check constraints first
+            if (!ch.redmoon.unchain.client.strategy.ConstraintEvaluator.evaluate(strategy.getConstraints(), context)) {
+                log.trace("Strategy {} excluded due to constraints", strategy.getName());
+                continue;
+            }
+
             StrategyEvaluator evaluator = evaluators.get(strategy.getName());
             if (evaluator != null) {
                 boolean enabled = evaluator.isEnabled(getParametersMap(strategy), context);
@@ -381,6 +387,11 @@ public class UnchainClient {
 
         if (env.getStrategies() != null && !env.getStrategies().isEmpty()) {
             for (Strategy strategy : env.getStrategies()) {
+                if (!ch.redmoon.unchain.client.strategy.ConstraintEvaluator.evaluate(strategy.getConstraints(),
+                        context)) {
+                    continue; // Skip strategies where constraints don't match
+                }
+
                 StrategyEvaluator evaluator = evaluators.get(strategy.getName());
                 if (evaluator != null && evaluator.isEnabled(getParametersMap(strategy), context)) {
                     matchingStrategy = strategy;
